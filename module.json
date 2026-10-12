@@ -1,0 +1,23 @@
+{
+	"name": "qa-qol",
+	"description": "In-game QA command menu. `/8 qa` to open it.",
+	"version": "1.0.0",
+	"author": "xiph",
+	"main": "index.js",
+	"options": {
+		"reloadable": true
+	},
+	"dependencies": {
+		"UI": "1.0",
+		"tera-game-state": "1.0"
+	},
+    "supportUrl": "https://github.com/xiphion/qa-qol/issues",
+    "servers": [
+        "https://raw.githubusercontent.com/xiphion/qa-qol/main/"
+    ],
+    "disableAutoUpdate": false,
+    "keywords": [
+        "testing",
+		"QA"
+    ]
+}

@@ -1,0 +1,29 @@
+{
+	"files": {
+		"ArbiterServer_QA_p31.txt": "badb8d087ee43117631f4db562b284ebc003bc7d6ef6f9cbd1f4acf2c5fe2081",
+		"README.md": "f9d7f565ee202e8d018adc71ad5349aa09b57c62b0b8838cc7e21189fc4e0b00",
+		"WorldServer_QA_p31.txt": "3b9f1baf67c8951adda2022b45ee2671f986c1c7d6635dc605ed57b3eecc5bc5",
+		"commands.json": "7faf16c47776bb4464d2168ef576821b093e9b6a5ff3dbcd05cb0ae1b321a369",
+		"dungeons.json": "d5a69330229c1d64aa9540b28d805335f43a368231e82a1b33ea1520f41f5983",
+		"gearsets.json": "be6b00cf10a0bba5c734480d5c169a8873c1da4eef8e140e76c2982f8f8412bf",
+		"index.js": "fa58097a4afa7e858f37199b8c7a7b6e688ef96c37a10368ef5870420fb31c08",
+		"key.json": "cc49d46474d11369c3769ec86bb0f73cbef121604875187cd59c7f378a9abcaf",
+		"module.json": "59bfd3df3d07682e37ae3eb69c1c6efdab3a3a0f5860fbd261ebbeefa48e2f2b",
+		"quests.json": "5d0d7c3981ea0d8009b71ce93edabce5792b1ae9afc025d00b0886032c8413f9",
+		"tester-gear/ToT testing dungeons.html": "0015bb2b875ff72b2e141eba781368eec1bbc8ca49913ff8e6435eea01fd930f",
+		"tester-gear/data.html": "0f7e2f2e52450e01e9f131cbe5c39d9c30346983d1099ad43bf338036e410371",
+		"tester-gear/dungeons full list.html": "a20b1eaa808a13a42d401c4c1b53a3754b769ac3ddd0fa909eebd73d6ea7b442",
+		"tester-gear/gear for testing dungeons.html": "9df96147ef7b5d170fdc4cbbb0e302d2395b68b1bb2972c69acea933a341f12d",
+		"tester-gear/key.html": "576ee7ae9198de253521bde6ea6ff1b557006a704d87f9e88df2e12e2fceee57",
+		"tester-gear/resources/sheet.css": "f7dec13927f664407ca58ec978fb049423eae7d5b5ce973f6c77fbfceb6c40c9",
+		"tools/build-data.js": "98cf7c54f9bf8cf2d4db3b2d2c3d104b251873ba2735b6b8c6f981787104b317",
+		"tools/build-quests.js": "5562a1dde5499f23cde4f50232c6f99d74731888fccc2995f19bcebe0e4cd3a0",
+		"ui/index.html": "70f85a645d892f46faebd3dce4f1f84655b572639214de2cee6d0e2e8f3ef13d"
+	},
+	"defs": {
+		"C_ADMIN": 1,
+		"C_PLAYER_LOCATION": 5,
+		"S_SHOW_DEAD_UI": 1,
+		"S_SYSTEM_MESSAGE": 1
+	}
+}

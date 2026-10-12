@@ -1,0 +1,404 @@
+_helpworld [keyword] //
+/@abnormality abnormal state ID //force abnormal state
+/@abnormality_off abnormality ID //force abnormality
+/@abnormality_show abnormality ID //force abnormality
+/@accept_revival // resurrect if resurrected
+/@accomplish_achievement_rate //achieve achievements until the current season achievement rate is exceeded
+/@add_bf_score //Addition of battlefield control points [Score]
+/@add_exp [EXP value] //Add experience value
+/@add_hp [HP value] //Adjust HP value
+/@add_mp [MP value] //Adjust MP value
+/@add_npcguild [npcGuildId] //Reputation forces appear
+/@add_servant_energy [how much] //Pet energy increase or decrease
+/@add_st [ST value] //ST value adjustment
+/@adjust_bonfire [time] //Change the remaining time of the bonfire created by the user
+/@aibehavior [on distance] or [off] //Collecting Ai information of neighboring Npc
+/@allabnormality [on/off] //Unconditionally apply abnormal state caused by skill
+/@allhit [on/off] //Ignore skill enemies and hit unconditionally
+/@allreaction [0/1/2] //When a skill is hit, a reaction occurs unconditionally (no 0, 1 mini, 2 default)
+/@angry [range] // change to anger mode
+/@aoi // number of world objects around
+/@apm_add [id] //automatic party matching pool entry
+/@apm_ask //automatic party matching allow popup
+/@apm_reset //Initialize automatic party matching allowed status
+/@apm_use [on/off] //Change the automatic party matching mode
+/@assert // assert information test
+/@atk_speed [attack rate] // All skill speeds increase according to the rate
+/@autorevivaltime [min] //adjust autorevivaltime
+/@ban_guild Character name // Deported guild member
+/@block_quest [questId] //Prevent quest from starting
+/@bookmark bookmark_id //bookmark (server)
+/@calc_battle_field_ranking_next_time // Create battlefield ranking at next server start
+/@calc_battle_field_Season_next_time //Create a battlefield season at the next server start
+/@calmdown [range] // Release anger mode
+/@cancelaction [next action number] //Forcibly cancel the action
+/@change_daily_quest_record_reset_hour [id] //Ilque clear time change
+/@change_daily_quest_seed_reset_hour [id] //Change the ilque seed regeneration time
+/@change_exp_gain_data [on/off] or [level, ratio, on/off] // Command to adjust the amount of world experience gained
+/@change_guildchief character name //delegation of guild leader
+/@change_npc_ai [range] [huntingZoneId] [npcid] [patternListId] //Adjust NpcAi
+/@change_npc_stat [range] [ratio] [type] //Adjust NpcStat ratio
+/@change_npc_to_user // Release user transformation mode
+/@change_party_manager [planetId] [userDbId] //Change party leader
+/@change_user [CLASS] [RACE] [GENDER] //Change class race gender
+/@change_user_status [battle/peace] //Change peace/battle status
+/@change_user_to_npc [huntingZoneId] [templateId] //User transformation mode
+/@changenpc [Hunterid] [NpcInstanceId] // Spawn NPC replacement
+/@changenpcangermode [on/off] // anger mode on/off
+/@charin character name // character login test
+/@charm charm ID // forced to add charm
+/@charout character name // character logout test
+/@check_guildname Guild name //Duplicate guild name check
+/@checkcell // check cell (for server)
+/@cl_reset // reset the battle log tool
+/@clear_achievement // reset achievement
+/@clear_aggro // Delete Aggro
+/@clear_all_achievement // reset all achievements
+/@clear_all_crest [Sentence point] //Release sentence application and apply sentence point. If there is no argument, only disable the sentence application
+/@clear_all_skill // Delete all acquired skills
+/@clear_all_social // Delete all socials learned
+/@clear_bonfire [street] //Delete the bonfire created by the user
+/@clear_build_object [distance] //Delete build object created by user
+/@clear_cont channel cleaning // channel cleaning
+/@clear_daily_quest_complete // Clear daily quest completion record
+/@clear_quest [questId] [all] //Clear the quest DB
+/@clear_recipe_world //Delete RECIPE from worldServer
+/@clear_seren_guide //
+/@clear_withdrawer // clear coward state
+/@clearallabnormality // clear all buffs (clear all buffs without deactivating them.
+/@clearbuff // delete all buffs
+/@clearcool // Reset all skill cool times
+/@clearware warehouse cleaning // warehouse cleaning
+/@combatlog [on/off] //Enable combat log
+/@combatwork [combat Work Id] //Forcibly execute the combat status work ID of the selected target NPC
+/@complete_all_quest //Complete all automatic order quests
+/@complete_extractor_quest
+/@crash [file name] //crash
+/@create_channel world //create channel
+/@create_item [Item template number] //Create an item in the world and drop it
+/@crest [Sentence point] //Release sentence application and apply sentence point. If there is no argument, only disable the sentence application
+/@crest_all //Learn all sentences
+/@crest_window //open sentence window
+/@damage //Damage nearby monsters
+/@debugsend [on/off] //Send debug information
+/@delete_Tcat_Product_Sale [Item ID] //Tcat product discount off
+/@despawn_all_extractor
+/@despawn_territory [Hunter ID] [TerritoryId] [Channel ID] //Dispones everything in the Territory
+/@despawnalleventnpc // despawn all event npc
+/@despawnallnpc // despawn all npc
+/@destroy_channel world channel instance // delete channel
+/@destroy_guild // Destroy the guild
+/@disable_license [License name] //Disable license
+/@dont_ban_battle_field //Prevent chatter in the loom field
+/@dr_available_count //Black gap quest order amount adjustment
+/@dr_balancing_usercount [userCount] //Modify the BalancingUserCount of the black gap at the current location
+/@dr_close [hzid] [dr_tid] //close black gap
+/@dr_cloud [step] //Open the black gap scene
+/@dr_cloud_off //Close the black gap scene
+/@dr_dungeon_reset //Enable re-entry to the black gap dungeon
+/@dr_expand //Forcibly expand the black gap at the current location
+/@dr_fold //Forcibly shrink the black gap at the current location
+/@dr_goto [hzid] [dr_tid] //Move to the black gap
+/@dr_here //Summon black gap to user location
+/@dr_inspect // Output black gap information at current location
+/@dr_list_reserve //Retrieve reserved black gap EventGroup information
+/@dr_open [hzid] [dr_tid] //open black gap
+/@dr_open_group [egid] //Forcibly open the black gap EventGroup
+/@dr_report //Print all open black gap information
+/@dr_rereserve_group //Initialize black gap EventGroup reservation information and rebook
+/@dr_rightnow //Ignore Countdown of all black gaps and start right away
+/@dr_set_abnormality [abnormalityId] // Fix the abnormal state of all black gaps
+/@dr_set_npcgroup [step] [groupTemplateId] //Fix n-step Spawn Npc in all black gaps
+/@dr_set_questtemplate [id1] [id2] [id3] //Fix the quest TemplateId of all black gaps
+/@dr_spawnreport // Print a list of waiting lists for black gap summons
+/@dr_start_quest //Start black gap quest
+/@dr_step [step] //skip the black gap
+/@dr_user_count //Change the number of people in the black gap quest
+/@dropitem template_id amount // Drop the item
+/@dump_performance_data //
+/@dungeon_flag [flag-name] //Set the dungeon flag
+/@dungeon_timer [timer-value] //Set the dungeon timer
+/@enable_license [License name] //Acquire license
+/@enable_ride_vehicle [on/off] //Can board the vehicle unconditionally
+/@enchantitemsuccess [-1: always fail, 0: default state, 1: always succeed] //Will you always succeed when reinforcing items?
+/@end_npc_arena // End NPC Arena
+/@enter_dungeon [contId] [enter-index] //Enter the dungeon
+/@exit_union
+/@exitclear_cool [1/0] //If it is 1, it is always possible to ignore the emergency escape time. If it is 0, as usual
+/@expdiv [Value to divide EXP] // Obtained by dividing the experience value by the parameter value
+/@extend_party [partyToRaid] //Change Party ↔ Raid
+/@extractitemfail [If it is 1, it always fails if it is 0, as it is] //Will it always fail when extracting items?
+/@extractitemsuccess [If 1, always succeed, 0 if original] //Will you always succeed when extracting items?
+/@fail_quest //Quest failure handling
+/@fast_box //gacha and eventSeed animation skip
+/@festival_end [festivalId] //Disable festival
+/@festival_start [festivalId] //Activate the festival
+/@fight_npc_arena //Start NPC Arena battle
+/@finish_battle_field [win/lose] //Force end the battlefield
+/@finish_battle_field_round // end round
+/@finish_tutorial // finish the tutorial
+/@forget_skill skillTemplateId isActive // ​​Delete skill
+/@forget_social [socialMotionId] //Social delete
+/@freeze_condition // condition value fixed
+/@fulldump [file name] //full dump
+/@gamble_test // gambling test
+/@get key [id/name] //Get property value
+/@get_region_info //Display the current region information
+/@ghost [on] or [off] //Get server coordinates of those spawned around
+/@giveup_promotion // give up the promotion test
+/@goto [other character name] //teleport to another character
+/@goto_battle_field_round //start from a specific round
+/@goto_extractor
+/@guildwar_accept [opposite guild name] //let's fight! XXX Guild
+/@guildwar_giveup [name of the opponent guild] //hang ha buck ha
+/@guildwar_raise [opposite guild name] [additional bet tactical chip] //let's fight XXX Guild
+/@guildwar_start [opposite guild name] [betting tactical chip] //let's fight! XXX Guild
+/@holdabnormality_clear // clear all stored buffs
+/@idle_social_stop idle social stop/start //
+/@ignoreskilllos [on/off] // Whether to check los when hitting a skill
+/@increaseinvensize [minimum 48 to 88] //Only increase the character inventory size
+/@insert_item templateId itemCount //item acquisition
+/@insert_Tcat_Product_Sale [Item ID] [Discount price], [Time (minutes)] //Register Tcat product discount
+/@interest [on distance] or [off] //Gather debug information of nearby guys
+/@invincible [on/off] // invincible state
+/@invisible [on/off] //NPC is close
+/@invite_guild character name //invite guild member
+/@is_tutorial_user //Check if you are a tutorial user
+/@item_add [userName] [itemTemplateId] [amount] //Add item
+/@item_del [userName] [itemTemplateId] [amount] //Delete item
+/@item_list [userName] //item listing
+/@item_multidel //
+/@item_trade //
+/@join_party [planetId] [userDbId] //Add party
+/@join_union
+/@jumpto [huntingZoneId] [templateId] //teleport to NPC
+/@kick_party [planetId] [userDbId] // kick off the party
+/@kill range UU // kill NPC within radius
+/@kill_mypet // destroy pet
+/@kill_summonee character name //invite guild members
+/@killme // suicide
+/@killme2 // Suicide while breaking crystal
+/@learn_skill skillTemplateId isActive // ​​skill acquisition
+/@learn_social [socialMotionId] //Social learning
+/@leave_dungeon //Leave the dungeon
+/@leave_party // leave the party
+/@level new level // change level
+/@limited_drop_reset_point [gauge id] //reset quantity control drop point
+/@limited_drop_set_point [gauge id] [capacity point] //Quantity control Drop point adjustment
+/@list key [id/name] //property listing
+/@login [class] [number of animals] //login test
+/@make_me_second // change yourself to a second character
+/@make_party [target username] // configure party
+/@make_party2 [target userDbId] //party configuration
+/@make_vehicle_skill_book //Get a boarding skill book
+/@makeitem [Template ID] [Quantity] [Enhanced] [Luxury(1)/Awakening(2)] //Create item
+/@makeitem_range [tid_start] [tid_end] [Quantity] //Make various items
+/@makeitems [Template ID] [Template ID] [Template ID] .... [Quantity] //Create various items
+/@makemoney [amount] // make money
+/@maketestitem [enchant] //Create test equipment item
+/@match_battle_field //Forcibly match two parties to the battlefield [Battlefield TID] [Relative ID]
+/@memstat //
+/@merge_item fromInvenPos toInvenPos //Merge item
+/@move_to_village //Move to the nearest grave in case of death
+/@mpfull [on/off] //MP full mode
+/@next_task [questId] //Proceed next task
+/@nocool [on/off] // Infinite skill cooldown mode
+/@nodie [on/off] //I get hit but I won't die
+/@nomod [on/off] //Position correction off mode during skill
+/@nonpk_list //Search the list of Sections set to NonPk in this world
+/@nonrecovery_hp [on/off] //HP automatic recovery on/off
+/@nonrecovery_mp [on/off] //MP automatic recovery on/off
+/@nonrecovery_st [on/off] //ST automatic recovery on/off
+/@open_all_box //Open all EventSeeds & Gachas in inventory
+/@packettest //
+/@parcel_fee //Pay parcel fee
+/@parcel_recv //receive parcel
+/@parcel_return // parcel return
+/@parcel_send // send parcel
+/@passive_off passive ID // turn off passive state
+/@passive_on passive ID // turn on passive status
+/@passive_see //Print on passive status screen
+/@passive_show passive ID // turn off passive status
+/@pausenpc range //stop NPC
+/@pegasus pegasusId // pegasus
+/@perfect_level new level // level change + skill acquisition
+/@pkmodeoff // Force PK state off
+/@prisoner [on/off] //set the prison state
+/@producefatiguepoint // set productivity
+/@produceitemfail [If it is 1, it always fails, if it is 0, as it is] //Will you always fail when making an item?
+/@produceitemsuccess
+/@prof_bug New skill level //Insect collection skill change
+/@prof_energy New skill level //Changed skill level for gathering energy
+/@prof_herb New skill level //Changed herb collection skill level
+/@prof_mineral New skill level //Mineral collection skill change
+/@profile_world //world server profiling
+/@pullmonster // pull the monster to my location
+/@qatest_world on/off //
+/@rank_add_point [point] // Add record competition inden point
+/@rank_add_private_point [point] //Add personal points in the record competition
+/@rank_add_record // record competition in-done record 1~10000 points randomly added
+/@rank_clear // Clear record competition indon
+/@rank_log [on/off] // Clear record competition index
+/@rank_start // Start counting the record competition index
+/@rank_test // record competition record film creation
+/@reaction [reaction motion number] //forced reaction
+/@recalc_stat // recalculate stats
+/@registerParts //
+/@reload_critical_adjust_datasheet //critical adjust datasheet reload
+/@reload_datasheet _world //reload all datasheets
+/@reload_dr //reload black gap datasheet
+/@reload_dungeon [Dungeon ID] [DungeonRetry Reload] //Reload only the specified dungeon
+/@reload_huntingzone [Hunting zone ID] // Reload only the designated hunting zone
+/@reload_item // Reload ItemTemplate
+/@reload_limited_drop_datasheet //limited drop data sheet reload
+/@reload_masstige_datasheet // reload masstige datasheet
+/@reload_noctan
+/@reload_quest //reload all quest data sheets
+/@reload_rank [id] //Reload record competition index xml
+/@reload_token_exchange_datasheet //token exchange data sheet reload
+/@reload_userskill // reread user skills
+/@reputation_time_init [npcGuildId] //Reset the reputation time limit
+/@reset_daily_event_quest //Reset daily play guide events
+/@reset_daily_quest //Reset the daily quest seed
+/@reset_dungeon_clearcount //reset all dungeon cooldowns
+/@reset_dungeon_enter_count // Delete dungeon entry count record
+/@reset_dungeonhistory //reset all dungeon cooldowns
+/@reset_masstige_status //Reset the target item for national enhancement (Avatar Weapons)
+/@reset_pcbang_inven //PC room inventory reset
+/@reset_profile_world //reset world server profile data
+/@reset_promotion ///Slow reset
+/@resumenpc range //replay NPC
+/@resurrection // resurrect
+/@rightbaseitem [RightID] [ItemTID] //Get RightBaseItem
+/@sealitemnow [if it is 1, if it is 0, it will be original] //When the item is attributed, it will be attribute immediately
+/@send_ask_code_hash //Send code hash request
+/@set key value [id/name] //set property value
+/@set_achievement_accomplished //achieve achievement
+/@set_achievement_cond_value //set achievement condition value
+/@set_all_achievement_accomplished //achieve all achievements
+/@set_condition value //Set the user's condition value
+/@set_custom_string //[itemDbid] [String] Change item custom name
+/@set_dungeon_clear //Set dungeon clear
+/@set_dungeon_reset_time //Set the time to delete the number of dungeon entries
+/@set_dungeon_user_count //Adjust the number of users in the dungeon for testing
+/@set_ep Change EP //Change EP
+/@set_exp [EXP value] //Set experience value
+/@set_gamble_master //Become a bastard
+/@set_gamble_property // set the property
+/@set_login_day [period] [loginDay] //Daily play guide attendance check
+/@set_money [amount] // set money
+/@set_noctan_count //녹탄 성능 변경
+/@set_npcguild_exp [npcGuildId] [grade] [exp] //Set the reputation faction experience
+/@set_npcguild_point [npcGuildId] [point] //Set reputation point
+/@set_on_dungeon_event // Start all dungeon events
+/@set_pc_level character name level // set character level
+/@set_pc_loc Character name location string // Set character location
+/@set_petdur [dur] //changing pet-dur temporarily
+/@set_petprof [Proficiency] //Change Pet Proficiency
+/@set_pkpoint [pkPoint] //Change pK point
+/@set_promotion // achieve promotion
+/@set_round_pve_kill_point //PveKill_Point[point]
+/@set_round_pve_skill_point //PveSkill_Point[point]
+/@set_Season_Ranker //전 시즌 랭커로 설정 [전장 ID]
+/@set_skill_prof skillId skillProf // set skill proficiency
+/@set_temper_ratio Enchant Probability //Fix Enchant Probability
+/@set_token_exchange_point [tokenExchangeId] [point] //Token score adjustment
+/@set_tutorial_user [on/off] //Set whether to be a tutorial user
+/@set_walk_speed //set walking speed
+/@set_world_worldparam [param-name] [param-value] //Modify WorldParam
+/@setmoney [name] [money] //set money
+/@setnoctan 녹탄 성능 변경 //
+/@setrestbonus rest_bonus //
+/@show_bonfire_info //Show current user's bonfire information
+/@show_chapter //View meetinghouse
+/@show_condition //View user's condition value
+/@show_extractor
+/@show_incubator //Open Pet Incubator
+/@show_items [tabIdx] [beginIdx] [endIdx] //Check inventory item information
+/@show_limited_drop_info [gauge id] //Show quantity control gauge information
+/@show_petmanager //Open Pet Manager
+/@show_skill_learn huntingZoneId npcId //Show skill acquisition window
+/@show_social_learn //Show learned social
+/@show_temper_window //hanga~
+/@show_user_status //View user status
+/@show_vs //Print the vehicle's speed
+/@showinven //
+/@shuttle [on/off] shuttleId // turn dynamic geo (shuttle) on and off
+/@skill_miss_limit // When the monster fails to hit the target a number of times due to height difference, etc.
+/@skillLog // Leave server file log
+/@sm [system message number] //system message
+/@social [socialMotionId] //social
+/@sort_inven //Automatic inventory sorting
+/@spawn_all_extractor [unionid] //Spawn the Conflict Continent Extractor
+/@spawn_bonfire typeid //Summon Bonfire
+/@spawn_one_extractor [unionid] //Spawn one Conflict Continent Extractor
+/@spawn_territory [HunterId] [TerritoryId] [Channel ID] // Spawn everything in the territory
+/@spawnalleventnpc // spawn all event npc
+/@spawnallnpc // spawn all npc
+/@spawnnpc [Hunting AreaId] [NpcTemplateId] [Count] // Let's spawn it
+/@speed multiplier // increase moving speed
+/@speed_hack_check //spec check [on/off]
+/@start_extractor [unionid] [point] //Dispatch Continent Extractor Despawn
+/@start_npc_arena // Start NPC Arena
+/@start_promotion // start the promotion test
+/@start_quest Quest ID // Start Quest
+/@start_seren_guide [type, id] //Start Seren Guide
+/@startnpcskill skill_template_id //Run NPC skill
+/@stfull [on/off] //ST full mode
+/@stopFloatingCastleUserCheck //
+/@swap_party [slotIndex1] [slotIndex2] //Change raid slot
+/@sysconfig_world //
+/@task_goal [questId] [taskIdx] [flag] //Set task goal
+/@teleport [worldId] [x] [y] [z] //teletoby
+/@teleport_channel //
+/@temper_item temperItemSlot materialItemSlot // Item Smelting
+/@test_parts_store //
+/@testoff // end program test
+/@teston Test type, other parameters // Start program test
+/@this // Force the position of the characters in my account to the current character position
+/@track_dynamic // Tracks only one NPC currently held as a target in the track list
+/@track_target //Add the selected target NPC to the tracking list
+/@trade_accept //
+/@trade_additem //
+/@trade_cancel
+/@trade_delitem
+/@trade_deny
+/@trade_request //
+/@unidentifysuccess //Sewing unconditionally successful [on/off]
+/@union_addplaypoint
+/@union_addpolicypoint
+/@union_addseasoncp
+/@union_battle_time [battestate] //Start/end the battle of the Yeonmyeong Territory
+/@union_changeclasstype
+/@union_changedesc
+/@union_changeelitetype
+/@union_changenotice
+/@union_post_count_many [num] //Set occupancy rate per person x num
+/@unionmember_addpolicypoint
+/@unRegisterParts //
+/@untrack_target //Remove selected target NPC from tracking list
+/@up_battle_time [batteState] [batteDurationinHour] //연맹 주문시
+/@up_complete_quest [ragne] i연명 기본 보상 완료
+/@up_goto_force_stone //Randomly approach the life-extending protection stone
+/@up_kill_force_stone //Forced destruction of life-extending protection stone
+/@use_exp_gain_data [on/off] //
+/@vaporize // true transparency
+/@vehicle_clear_cooltime //Initialize the vehicle skill cooltime
+/@vehicle_killself //Destruction of the vehicle on board
+/@vehicle_nocool [on/off] //Remove the skill cooldown of the vehicle.
+/@view_channel // view channel
+/@view_festival [Eventid] //3M World Event Information Output
+/@virtual_latency [min] [max] //Virtual latency
+/@visit_all_sections //Visit all regions
+/@vm_buy [vm inventory#,count] [...] //buy
+/@vm_edit_buy [vm inventory #, user inventory #, tempId, number of lives, number of collections, price] [...] //Set the purchase machine
+/@vm_edit_sell [collection amount] [vm inventory #, user inventory #, tempId, number of eight, number of collections, price] [...] //Vending machine setting
+/@vm_sell [vm inventory#,count] [...] //sell
+/@vm_show_buy //View purchase list
+/@vm_show_sell //View sales list
+/@ware_get //Extract from django
+/@ware_list //View warehouse
+/@ware_move //창고에서 창고로 이동
+/@ware_store //Save to Django
+/@win_battle_field //force to win the battlefield
+/@write_gcfunctions //

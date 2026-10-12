@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QA Menu</title>
+<style>
+	* { box-sizing: border-box; }
+	body { background: #14181f; color: #e6e9ef; font: 13px/1.45 "Segoe UI", Tahoma, sans-serif; margin: 0; padding: 0; }
+	/* ---------------------------------------------------------------------------
+	   NOTE: no flexbox anywhere. Awesomium predates flex support, so every flex
+	   rule is silently ignored and controls stack vertically. Horizontal layout
+	   here = inline-block + margins (supported since IE4). Vertical alignment =
+	   vertical-align. Gaps = margins, never the flex gap property.
+	   --------------------------------------------------------------------------- */
+
+	#topbar { position: fixed; top: 0; left: 0; right: 0; background: #1b2029; border-bottom: 1px solid #2c3441; padding: 8px 10px; z-index: 5; }
+	#topbar .row > * { margin: 0 6px 0 0; vertical-align: middle; }
+	.brand { font-weight: 700; color: #7cc4ff; letter-spacing: 0.5px; }
+	#info { color: #9aa7b8; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+	#info b { color: #e6e9ef; font-weight: 600; }
+	#searchrow { position: fixed; top: 40px; left: 0; right: 0; background: #14181f; padding: 8px 10px; border-bottom: 1px solid #243040; z-index: 4; }
+	#search { width: 100%; background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 6px 8px; font-family: inherit; font-size: 13px; }
+	#search:focus { outline: none; border-color: #4a7fbf; }
+	#sections { padding: 96px 10px 46px; }
+	#status { position: fixed; bottom: 0; left: 0; right: 0; background: #1b2029; border-top: 1px solid #2c3441; padding: 6px 10px; color: #8fd18f; font-size: 12px; min-height: 26px; }
+	#status.err { color: #ff8f8f; }
+
+	.sec { margin-bottom: 14px; }
+	.sec.dense { margin-bottom: 10px; }
+	.sec > h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6f7f95; margin: 0 0 6px; border-bottom: 1px solid #243040; padding-bottom: 3px; }
+	.sec > h2::before { content: ''; display: inline-block; width: 4px; height: 4px; background: #4a9eff; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+	.sec.dense > h2 { margin-bottom: 4px; }
+	.item { background: #1b2029; border: 1px solid #27313f; border-radius: 4px; padding: 8px; margin-bottom: 6px; }
+	.item .label { font-weight: 600; margin-bottom: 6px; }
+	.item .hint { color: #6f7f95; font-weight: 400; font-size: 11px; margin-left: 6px; }
+	.sec.dense .item { padding: 5px 6px; margin-bottom: 4px; }
+	.sec.dense .item .label { margin-bottom: 4px; }
+
+	/* Button/input row. Spacing comes from child margins. Do NOT use the
+	   `font-size:0` whitespace trick here: inputs match their font via
+	   `font-family/size` (not `font: inherit`), because `input[type=text]` is
+	   specificity (0,1,1) and would beat `.row > *` (0,1,0). That collision
+	   collapsed every input in a row to zero-width text. */
+	.row { }
+	.row > * { vertical-align: middle; margin: 0 4px 4px 0; }
+	.sec.dense .row > * { margin: 0 3px 3px 0; }
+	.grow { }
+	.w100 { width: 100%; }
+	.grow60 { width: 60%; }
+	.grow30 { width: 30%; }
+	.spacer { display: block; height: 0; }
+
+	/* Columns: equal-width inline-block cells with a margin gutter. */
+	.itemrow { display: block; overflow: hidden; margin: 0 -4px; }
+	.itemcell { display: inline-block; vertical-align: top; padding: 0 4px; }
+	.itemcell .item { background: none; border: none; padding: 0; margin: 0; }
+	.itemcell .item .label { margin-bottom: 3px; }
+
+	button, .btn { background: #2b3644; color: #e6e9ef; border: 1px solid #3b4a5e; border-radius: 3px; padding: 5px 10px; font-family: inherit; font-size: 13px; cursor: pointer; }
+	button:hover, .btn:hover { background: #37475a; }
+	button.sent { border-color: #7cc4ff; color: #7cc4ff; }
+	button.active, .opt.active { background: #1f6feb; border-color: #4a9eff; color: #fff; }
+	button.danger { background: #6b2430; border-color: #94404e; }
+	button.danger:hover { background: #872e3c; }
+	button.wide { width: 100%; text-align: left; }
+
+	.chain { margin-top: 4px; padding-left: 2px; }
+	.chainrow { display: inline-block; vertical-align: middle; margin: 2px 10px 2px 0; color: #9aa7b8; font-size: 12px; cursor: pointer; }
+	.chainrow:hover { color: #c8d4e4; }
+	.chainrow input { vertical-align: middle; margin-right: 4px; }
+
+	/* Auto action: checkbox + tiny seconds box, under the button. */
+	.autorow { display: block; margin-top: 5px; color: #9aa7b8; font-size: 12px; cursor: pointer; }
+	.autorow:hover { color: #c8d4e4; }
+	.autorow input[type=checkbox] { vertical-align: middle; margin-right: 4px; }
+	.autorow span { vertical-align: middle; }
+	input.tiny { width: 34px; margin: 0 3px; padding: 2px 3px; text-align: center; vertical-align: middle; }
+
+	/* Questing: collapsible lines are headers with NO buttons (only their member
+	   quests have buttons). Floats, not flex - Awesomium has no flexbox. */
+	.qline { padding: 5px 8px; cursor: pointer; background: #171d26; border-bottom: 1px solid #222b36; font-weight: 600; overflow: hidden; }
+	.qline:hover { background: #243040; }
+	.qarrow { display: inline-block; width: 12px; color: #4a9eff; font-weight: 400; }
+	.qcount { float: right; color: #6f7f95; font-weight: 400; font-size: 11px; }
+	.qrow { padding: 4px 8px 4px 24px; border-bottom: 1px solid #1c232d; overflow: hidden; }
+	.qrow:hover { background: #1e242e; }
+	.qname { vertical-align: middle; }
+	.qid { color: #6f7f95; font-size: 11px; margin-left: 6px; vertical-align: middle; }
+	.qbtns { float: right; }
+	.qbtns button { margin-left: 4px; padding: 3px 7px; font-size: 11px; }
+	.qnote { padding: 4px 8px 4px 24px; color: #6f7f95; font-size: 11px; }
+
+	/* font-family/font-size are set explicitly rather than via `font: inherit`:
+	   the `font` shorthand is lower specificity here and lets a parent's
+	   font-size leak in, which is what squashed the inputs. */
+	input[type=text] { background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 5px 7px; font-family: inherit; font-size: 13px; }
+	input[type=text]:focus { outline: none; border-color: #4a7fbf; }
+	input.num { width: 62px; }
+	select { background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 5px 7px; font-family: inherit; font-size: 13px; max-width: 260px; }
+
+	.list { max-height: 168px; overflow-y: auto; border: 1px solid #27313f; border-radius: 3px; margin-top: 6px; }
+	.sec.dense .list { max-height: 110px; }
+	.list .opt { padding: 5px 8px; cursor: pointer; border-bottom: 1px solid #222b36; overflow: hidden; }
+	.list .opt:hover { background: #243040; }
+	.list .opt:last-child { border-bottom: none; }
+	.list .opt .id { color: #6f7f95; font-size: 11px; float: right; padding-left: 8px; }
+	.list .empty { padding: 8px; color: #6f7f95; }
+
+	/* Item search results as a real two-column table: checkbox + name in the
+	   left cell, id in a narrow right column. A table guarantees one row per
+	   line (no inline <label> packing 2-3 to a line) and stops the id from
+	   drifting to the far right edge. Plain CSS2 tables - well supported. */
+	.list table.picks { width: 100%; border-collapse: collapse; }
+	.list table.picks tr.pick { cursor: pointer; }
+	.list table.picks tr.pick:hover { background: #243040; }
+	.list table.picks tr.pick.active { background: #1f6feb; }
+	.list table.picks td.nm { padding: 4px 6px; border-bottom: 1px solid #222b36; vertical-align: middle; }
+	.list table.picks td.nm input[type=checkbox] { vertical-align: middle; margin: 0 6px 0 1px; }
+	/* width:1% + nowrap shrinks the id column to its content, right-aligned. */
+	.list table.picks td.id { padding: 4px 6px; border-bottom: 1px solid #222b36; width: 1%; white-space: nowrap; text-align: right; color: #6f7f95; font-size: 11px; }
+	.list table.picks tr.pick.active td.id { color: #fff; }
+
+	.preview { margin-top: 6px; background: #10151d; border: 1px dashed #34404f; border-radius: 3px; padding: 6px; font-family: Consolas, monospace; font-size: 11px; color: #cfe3ff; word-break: break-all; }
+	.sec.dense .preview { padding: 4px; }
+	.names { margin-top: 4px; color: #9aa7b8; font-size: 11px; }
+	.chips { margin-top: 6px; min-height: 22px; }
+	.chip { display: inline-block; vertical-align: top; background: #2b3644; border: 1px solid #3b4a5e; border-radius: 10px; padding: 2px 8px; margin: 0 4px 4px 0; font-size: 11px; }
+	.chip-x { color: #ff8f8f; cursor: pointer; font-weight: 700; margin-left: 5px; }
+	.chip-x:hover { color: #fff; }
+	.sec.dense .chips { min-height: 18px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="topbar">
+	<div class="row">
+		<span class="brand">QA</span>
+		<span id="info">loading...</span>
+		<button id="btn-reset" class="danger" title="speed 1, nodie off, nocool off, mpfull off">Reset all cheats</button>
+	</div>
+</div>
+<div id="searchrow"><input id="search" type="text" placeholder="Search commands (speed, dungeon, crest...)" oninput="applyFilter()"></div>
+<div id="sections"></div>
+<div id="status"></div>
+
+<script>
+var CFG = { sections: [], actions: [] };
+var DUNGEONS = { dungeons: [] };
+var GEARSETS = { filters: [], sets: [], slotNames: [] };
+var ZONES = [];
+var zonesLoaded = false;
+var zonesError = null;
+var STATE = {};
+var qaState = {};          // normalized command -> args we last sent (for button state)
+var selectedItems = [];
+var dungeonNameById = {};
+var zoneNameById = {};
+var autoControls = [];      // rendered auto-action controls, synced from /state
+var QUEST_INDEX = { lines: [], loose: [], counts: {} };
+var questError = null;      // why the quest index is empty, shown in the panel
+
+function proxy() { return window._tera_client_proxy_ || window.__tera_client_proxy__; }
+
+window.addEventListener('error', function(e) {
+	// The proxy's alert is best-effort: show it in the status line either way.
+	try {
+		var p = proxy();
+		if (p && p.alert) p.alert('QA menu error: ' + e.message);
+	} catch (err) { }
+	status('QA menu error: ' + e.message, true);
+});
+
+window.onload = function() {
+	var p = proxy();
+	if (p) {
+		try { p.resize_to(540, 660); } catch (e) {}
+		try { p.set_title('QA Menu'); } catch (e) {}
+	}
+// Focus the search box immediately so typing works without a click.
+	document.getElementById('search').focus();
+	// "/" jumps to search from anywhere in the menu (unless already typing).
+	document.addEventListener('keydown', function(e) {
+		var tag = (e.target && e.target.tagName) || '';
+		if (e.keyCode === 191 && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+			e.preventDefault();
+			document.getElementById('search').focus();
+			document.getElementById('search').select();
+		}
+	});
+	loadAll();
+	pollState();
+	setInterval(pollState, 3000);
+};
+
+// ---------- helpers ----------
+function esc(s) {
+	return String(s).replace(/[&<>"']/g, function(c) {
+		return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+	});
+}
+function getJSON(url, cb) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', url, true);
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState != 4) return;
+		if (xhr.status == 200) {
+			try { cb(JSON.parse(xhr.responseText), null); }
+			catch (e) { cb(null, e.message); }
+		} else cb(null, 'HTTP ' + xhr.status);
+	};
+	xhr.send();
+}
+function status(msg, isErr) {
+	var el = document.getElementById('status');
+	el.innerHTML = esc(msg);
+	el.className = isErr ? 'err' : '';
+}
+
+// Awesomium does not reliably fire keyup/input on text inputs, so bind every
+// event that could indicate a change. All of them funnel into the same handler.
+function bindInput(el, handler) {
+	['input', 'keyup', 'keydown', 'change', 'blur', 'paste', 'cut', 'propertychange'].forEach(function (ev) {
+		el['on' + ev] = handler;
+	});
+	return el;
+}
+
+// Some Awesomium builds never deliver keyup/input to a text box at all. Polling
+// the value is the only guaranteed way to notice a change, so filters get both.
+function watchValue(el, onChange, every) {
+	var last = el.value;
+	return setInterval(function () {
+		if (el.value !== last) {
+			last = el.value;
+			onChange();
+		}
+	}, every || 200);
+}
+
+// Remember what we last sent so toggle/preset buttons can show their state.
+function noteSent(cmdString) {
+	var parts = String(cmdString).split(' ');
+	qaState[parts.shift()] = parts.join(' ');
+	paintState();
+}
+
+function send(cmd, btn, cb) {
+	if (btn) { btn.className = (btn.className + ' sent').replace(/\s+/g, ' '); setTimeout(function() { btn.className = btn.className.replace(' sent', ''); }, 900); }
+	getJSON('/run?cmd=' + encodeURIComponent(cmd), function(r, err) {
+		if (!err && r && r.ok) noteSent(r.sent);
+		status(err ? 'Failed: ' + err : (r.ok ? 'Sent: ' + r.sent : 'Error: ' + r.error), !(r && r.ok));
+		if (cb) cb(r, err);
+	});
+}
+
+function doAction(id, btn) {
+	getJSON('/action?id=' + encodeURIComponent(id), function(r, err) {
+		if (!err && r && r.ok) (r.sent || []).forEach(noteSent);
+		status(err ? 'Failed: ' + err : (r.ok ? 'Reset: ' + r.sent.join(', ') : 'Error: ' + r.error), !(r && r.ok));
+	});
+}
+
+// Highlight the button matching what we last sent, per command group.
+function paintState() {
+	var btns = document.getElementsByTagName('button');
+	for (var i = 0; i < btns.length; i++) {
+		var b = btns[i];
+		var cmd = b.getAttribute('data-cmd');
+		if (!cmd) continue;
+		var args = b.getAttribute('data-args');
+		var want = qaState[cmd];
+		if (want !== undefined && want === args) b.className = b.className.replace(/\s*active\s*/g, ' ') + ' active';
+		else b.className = b.className.replace(/\s*active\s*/g, ' ').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
+	}
+}
+
+// ---------- loading ----------
+function loadAll() {
+	getJSON('/commands', function(cfg, err) {
+		if (err) return status('Could not load commands.json: ' + err, true);
+		CFG = cfg;
+		getJSON('/dungeons', function(d) {
+			DUNGEONS = d || DUNGEONS;
+			(DUNGEONS.dungeons || []).forEach(function(dn) { dungeonNameById[dn.contId] = dn.name; });
+			render();
+		});
+		getJSON('/gearsets', function(g) { GEARSETS = g || GEARSETS; render(); });
+		getJSON('/quests', function(q) {
+			if (q && q.index) QUEST_INDEX = q.index;
+			if (q && q.error) questError = q.error;
+			render();
+		});
+		getJSON('/zones', function(z) {
+			ZONES = ((z && z.zones) || []).sort(function(a, b) {
+				return (zoneName(a) || String(a.id)).localeCompare(zoneName(b) || String(b.id));
+			});
+			zonesError = (z && z.error) ? String(z.error) : null;
+			zonesLoaded = true;
+			ZONES.forEach(function(zn) { if (zn.name) zoneNameById[zn.id] = zn.name; });
+			render();
+		});
+	});
+}
+
+function pollState() {
+	getJSON('/state', function(s) {
+		if (!s) return;
+		STATE = s;
+		var el = document.getElementById('info');
+		var zn = s.zone ? (dungeonNameById[s.zone] || zoneNameById[s.zone] || '') : '';
+
+		// Keep auto-action controls in sync with the mod's state.
+		var auto = s.auto || {};
+		for (var i = 0; i < autoControls.length; i++) {
+			var ac = autoControls[i];
+			var st = auto[ac.command];
+			if (!st) continue;
+			ac.cb.checked = !!st.enabled;
+			if (document.activeElement !== ac.num) ac.num.value = String(st.seconds);
+		}
+		el.innerHTML = s.inGame
+			? '<b>' + esc(s.char || '?') + '</b> lv' + esc(s.level) + ' &nbsp;|&nbsp; zone <b>' + esc(s.zone) + '</b>' + esc(zn) + (s.inDungeon ? ' (dungeon)' : '')
+			: 'not in game';
+	});
+}
+
+// ---------- rendering ----------
+function render() {
+	var host = document.getElementById('sections');
+	host.innerHTML = '';
+	autoControls = [];   // re-render replaces the DOM, so drop stale references
+	(CFG.sections || []).forEach(function(sec) {
+		var wrap = document.createElement('div');
+		wrap.className = sec.dense ? 'sec dense' : 'sec';
+		var h = document.createElement('h2');
+		h.appendChild(document.createTextNode(sec.title || ''));
+		wrap.appendChild(h);
+		(sec.items || []).forEach(function(item) { wrap.appendChild(renderItem(item)); });
+		host.appendChild(wrap);
+	});
+	document.getElementById('btn-reset').onclick = function() { doAction('reset', this); };
+	paintState();
+}
+
+function renderItem(item) {
+	var box = document.createElement('div');
+	box.className = 'item';
+	box.setAttribute('data-search', ((item.label || '') + ' ' + (item.cmd || '') + ' ' + (item.type || '') + ' ' + (item.hint || '')).toLowerCase());
+
+	var label = document.createElement('div');
+	label.className = 'label';
+	label.appendChild(document.createTextNode(item.label || item.cmd || ''));
+	if (item.hint) {
+		var hint = document.createElement('span');
+		hint.className = 'hint';
+		hint.appendChild(document.createTextNode(item.hint));
+		label.appendChild(hint);
+	}
+	box.appendChild(label);
+
+	switch (item.type) {
+		case 'cmd': renderCmd(box, item); break;
+		case 'options': renderOptions(box, item); break;
+		case 'toggle': renderToggle(box, item); break;
+		case 'input': renderInput(box, item); break;
+		case 'teleport': renderTeleport(box, item); break;
+		case 'dungeons': renderDungeons(box); break;
+		case 'items': renderItemSearch(box); break;
+		case 'gearsets': renderGearsets(box); break;
+		case 'group': renderGroup(box, item); break;
+		case 'quests': renderQuests(box); break;
+	}
+	return box;
+}
+
+// A group lays its children out side-by-side in one horizontal row instead of
+// stacking them, so related controls share a line and the panel stays compact.
+// Widths are explicit percentages because this browser has no flexbox.
+function renderGroup(box, item) {
+	var kids = item.items || [];
+	var w = Math.floor(100 / kids.length) - 3;
+	var row = document.createElement('div');
+	row.className = 'itemrow';
+	kids.forEach(function(child) {
+		var cell = document.createElement('div');
+		cell.className = 'itemcell';
+		cell.style.width = w + '%';
+		cell.appendChild(renderItem(child));
+		row.appendChild(cell);
+	});
+	box.appendChild(row);
+}
+
+function renderCmd(box, item) {
+	var wrap = document.createElement('div');
+	wrap.className = 'cmdwrap';
+	var b = document.createElement('button');
+	b.className = 'wide';
+	b.appendChild(document.createTextNode(item.label));
+	b.onclick = function() {
+		// Fire the main command, then each checked chain command in order.
+		send(String(item.cmd).replace(/^\/@?/, ''), b, function() {
+			(item.chain || []).forEach(function(c) {
+				if (c._checked) send(String(c.cmd).replace(/^\/@?/, ''), b);
+			});
+		});
+	};
+	wrap.appendChild(b);
+	if (item.chain && item.chain.length) {
+		var cbox = document.createElement('div');
+		cbox.className = 'chain';
+		item.chain.forEach(function(c) {
+			var row = document.createElement('label');
+			row.className = 'chainrow';
+			var cb = document.createElement('input');
+			cb.type = 'checkbox';
+			cb.checked = c.defaultOn !== false;
+			c._checked = cb.checked;
+			cb.onchange = function() { c._checked = cb.checked; };
+			var lbl = document.createElement('span');
+			lbl.appendChild(document.createTextNode(c.label));
+			row.appendChild(cb); row.appendChild(lbl);
+			cbox.appendChild(row);
+		});
+		wrap.appendChild(cbox);
+	}
+	if (item.auto) wrap.appendChild(renderAuto(item.auto));
+	box.appendChild(wrap);
+}
+
+// Auto action: a checkbox + small seconds box that makes the mod fire this
+// command N seconds after death. State is owned by the mod (it survives page
+// reloads and mod reloads); this control just reads and pushes it.
+function renderAuto(auto) {
+	var cmd = String(auto.cmd).replace(/^\/@?/, '');
+	var st = (STATE.auto && STATE.auto[cmd]) || {};
+
+	var lbl = document.createElement('label');
+	lbl.className = 'autorow';
+
+	var cb = document.createElement('input');
+	cb.type = 'checkbox';
+	cb.checked = !!st.enabled;
+
+	var txt = document.createElement('span');
+	txt.appendChild(document.createTextNode((auto.label || 'Auto') + ' after'));
+
+	var num = document.createElement('input');
+	num.type = 'text';
+	num.className = 'tiny';
+	num.value = String(st.seconds !== undefined ? st.seconds : (auto.defaultSeconds || 5));
+
+	var unit = document.createElement('span');
+	unit.appendChild(document.createTextNode('s'));
+
+	function push() {
+		getJSON('/auto?cmd=' + encodeURIComponent(cmd) + '&enabled=' + (cb.checked ? 1 : 0)
+			+ '&seconds=' + encodeURIComponent(num.value), function(r, err) {
+				if (err || !r || !r.ok) return status('Auto setting failed', true);
+				cb.checked = !!r.action.enabled;
+				num.value = String(r.action.seconds);
+				status('Auto ' + cmd + ': ' + (r.action.enabled ? 'on, ' + r.action.seconds + 's' : 'off'));
+			});
+	}
+	cb.onchange = push;
+	num.onchange = push;
+	num.onkeydown = function(e) { if (e.keyCode == 13) push(); };
+
+	lbl.appendChild(cb); lbl.appendChild(txt); lbl.appendChild(num); lbl.appendChild(unit);
+	autoControls.push({ command: cmd, cb: cb, num: num });
+	return lbl;
+}
+
+function renderOptions(box, item) {
+	var row = document.createElement('div');
+	row.className = 'row';
+	var cmd = String(item.cmd).replace(/^\/@?/, '');
+	(item.options || []).forEach(function(opt) {
+		var b = document.createElement('button');
+		b.setAttribute('data-cmd', cmd);
+		b.setAttribute('data-args', opt.args);
+		b.appendChild(document.createTextNode(opt.label));
+		b.onclick = function() { send(cmd + ' ' + opt.args, b); };
+		row.appendChild(b);
+	});
+	box.appendChild(row);
+
+	// Optional free field, for values without a preset button.
+	if (item.allowCustom) {
+		var crow = document.createElement('div');
+		crow.className = 'row';
+		crow.style.marginTop = '5px';
+		var inp = document.createElement('input');
+		inp.type = 'text';
+		inp.className = 'grow60';
+		inp.placeholder = item.customPlaceholder || 'custom value';
+		var cb = document.createElement('button');
+		cb.appendChild(document.createTextNode('Send ' + cmd));
+		function sendCustom() {
+			var v = inp.value.replace(/^\s+|\s+$/g, '');
+			if (!v) return;
+			send(cmd + ' ' + v, cb);
+			inp.value = '';
+		}
+		inp.onkeydown = function(e) { if (e.keyCode == 13) sendCustom(); };
+		cb.onclick = sendCustom;
+		crow.appendChild(inp);
+		crow.appendChild(cb);
+		box.appendChild(crow);
+	}
+}
+
+function renderToggle(box, item) {
+	var row = document.createElement('div');
+	row.className = 'row';
+	var cmd = String(item.cmd).replace(/^\/@?/, '');
+	['on', 'off'].forEach(function(state) {
+		var b = document.createElement('button');
+		b.setAttribute('data-cmd', cmd);
+		b.setAttribute('data-args', state);
+		b.appendChild(document.createTextNode(state.toUpperCase()));
+		b.onclick = function() { send(cmd + ' ' + state, b); };
+		row.appendChild(b);
+	});
+	box.appendChild(row);
+}
+
+function renderInput(box, item) {
+	var row = document.createElement('div');
+	row.className = 'row';
+	var inp = document.createElement('input');
+	inp.type = 'text';
+	inp.className = 'grow60';
+	inp.placeholder = item.placeholder || 'arguments';
+	inp.onkeydown = function(e) { if (e.keyCode == 13) sendIt(); };
+	var b = document.createElement('button');
+	b.appendChild(document.createTextNode('Send'));
+	function sendIt() {
+		var v = inp.value.replace(/^\s+|\s+$/g, '');
+		if (!v && !item.allowEmpty) return;
+		send(item.cmd + (v ? ' ' + v : ''), b);
+		inp.value = '';
+	}
+	b.onclick = sendIt;
+	row.appendChild(inp);
+	row.appendChild(b);
+	box.appendChild(row);
+}
+
+// ---------- teleport to an arbitrary zone ----------
+function renderTeleport(box, item) {
+	var row1 = document.createElement('div');
+	row1.className = 'row';
+	var search = document.createElement('input');
+	search.type = 'text';
+	search.className = 'w100';
+	search.placeholder = 'zone name or id';
+	row1.appendChild(search);
+	box.appendChild(row1);
+
+	var list = document.createElement('div');
+	list.className = 'list';
+	box.appendChild(list);
+
+	var row2 = document.createElement('div');
+	row2.className = 'row';
+	row2.style.marginTop = '6px';
+	var ax = numInput('x'), ay = numInput('y'), az = numInput('z');
+	row2.appendChild(ax); row2.appendChild(ay); row2.appendChild(az);
+
+	var grab = document.createElement('button');
+	grab.appendChild(document.createTextNode('My position'));
+	grab.onclick = function() {
+		var l = STATE.loc;
+		if (!l) return status('Position unknown - move a little', true);
+		ax.value = String(Math.round(l.x));
+		ay.value = String(Math.round(l.y));
+		az.value = String(Math.round(l.z));
+	};
+	row2.appendChild(grab);
+
+	var here = document.createElement('button');
+	here.appendChild(document.createTextNode('This zone'));
+	here.onclick = function() {
+		if (!STATE.zone) return status('No current zone', true);
+		pickedZone = STATE.zone;
+		search.value = ((dungeonNameById[STATE.zone] || zoneNameById[STATE.zone]) ? (dungeonNameById[STATE.zone] || zoneNameById[STATE.zone]) + ' ' : '') + STATE.zone;
+		paint();
+	};
+	row2.appendChild(here);
+	box.appendChild(row2);
+
+	var row3 = document.createElement('div');
+	row3.className = 'row';
+	var sendBtn = document.createElement('button');
+	sendBtn.appendChild(document.createTextNode('Teleport'));
+	sendBtn.onclick = function() {
+		var id = resolveZone();
+		if (id === null) return status('Pick a zone from the list, or type its id', true);
+		send('teleport ' + id + ' ' + (ax.value || 0) + ' ' + (ay.value || 0) + ' ' + (az.value || 0), sendBtn);
+	};
+	row3.appendChild(sendBtn);
+	box.appendChild(row3);
+
+	var pickedZone = null;
+
+	// A bare number typed in the box always wins; otherwise use the clicked zone.
+	function resolveZone() {
+		var t = search.value.replace(/\s+/g, '');
+		if (/^\d+$/.test(t)) return t;
+		return pickedZone;
+	}
+
+	function paint() {
+		var q = search.value.replace(/^\s+|\s+$/g, '').toLowerCase();
+		list.innerHTML = '';
+		var shown = 0;
+		var rows = ZONES.length ? ZONES : dungeonFallback();
+		rows.forEach(function(z) {
+			var nm = zoneName(z) || z.name || '';
+			if (q && nm.toLowerCase().indexOf(q) === -1 && String(z.id).indexOf(q) === -1) return;
+			if (++shown > 60) return;
+			var opt = document.createElement('div');
+			opt.className = 'opt' + (pickedZone === z.id ? ' active' : '');
+			var n = document.createElement('div');
+			n.appendChild(document.createTextNode((nm ? nm : 'zone ' + z.id) + ' - ' + z.id));
+			var c = document.createElement('div');
+			c.className = 'id';
+			c.appendChild(document.createTextNode(z.channelType || (z.note ? 'dungeon' : '')));
+			opt.appendChild(n); opt.appendChild(c);
+			opt.onclick = function() {
+				pickedZone = z.id;
+				search.value = (nm ? nm + ' ' : '') + z.id;
+				paint();
+				status('Zone ' + z.id + ' picked - set coordinates, then Teleport');
+			};
+			list.appendChild(opt);
+		});
+		if (!shown) {
+			var e = document.createElement('div');
+			e.className = 'empty';
+			e.appendChild(document.createTextNode(
+				!zonesLoaded ? 'Loading zones...'
+					: (zonesError ? 'Zone list failed: ' + zonesError + ' - type a zone id.'
+						: 'No match - type a zone id directly.')));
+			list.appendChild(e);
+		}
+	}
+
+	// Dungeon ids are a guaranteed-available fallback if the DataCenter query
+	// did not return anything.
+	function dungeonFallback() {
+		if (!DUNGEONS.dungeons) return [];
+		return DUNGEONS.dungeons.map(function(d) {
+			return { id: d.contId, name: d.name, note: d.note, channelType: 'dungeon' };
+		});
+	}
+
+	bindInput(search, function() {
+		// If the box no longer mentions the picked zone, treat it as unselected
+		// so a stale id can never be teleported to by accident.
+		if (pickedZone !== null && search.value.indexOf(String(pickedZone)) === -1) pickedZone = null;
+		paint();
+	});
+	watchValue(search, function() {
+		if (pickedZone !== null && search.value.indexOf(String(pickedZone)) === -1) pickedZone = null;
+		paint();
+	});
+	paint();
+}
+function numInput(ph) {
+	var i = document.createElement('input');
+	i.type = 'text';
+	i.className = 'num';
+	i.placeholder = ph;
+	return i;
+}
+function zoneName(z) {
+	if (!z) return '';
+	// dungeons.json (your sheet) first: the DataCenter keeps dev placeholder
+	// names for some dungeons, and lacks 8 of yours.
+	if (dungeonNameById[z.id]) return dungeonNameById[z.id];
+	if (zoneNameById[z.id]) return zoneNameById[z.id];
+	var keys = ['name', 'zoneName', 'mapName', 'string', 'title', 'desc'];
+	for (var i = 0; i < keys.length; i++) {
+		if (typeof z[keys[i]] === 'string' && z[keys[i]]) return z[keys[i]];
+	}
+	return '';
+}
+
+// ---------- dungeons ----------
+function renderDungeons(box) {
+	var row = document.createElement('div');
+	row.className = 'row';
+	var search = document.createElement('input');
+	search.type = 'text';
+	search.className = 'grow60';
+	search.placeholder = 'Filter 146 dungeons...';
+	row.appendChild(search);
+	var idx = document.createElement('input');
+	idx.type = 'text';
+	idx.className = 'num';
+	idx.value = '0';
+	idx.title = 'enter-index';
+	row.appendChild(idx);
+	box.appendChild(row);
+
+	var list = document.createElement('div');
+	list.className = 'list';
+	box.appendChild(list);
+
+	var addRow = document.createElement('div');
+	addRow.className = 'row';
+	addRow.style.marginTop = '6px';
+	var nameInp = document.createElement('input');
+	nameInp.type = 'text';
+	nameInp.className = 'grow60';
+	nameInp.placeholder = 'Name current zone as...';
+	var saveBtn = document.createElement('button');
+	saveBtn.appendChild(document.createTextNode('Save current zone'));
+	saveBtn.onclick = function() {
+		var n = nameInp.value.replace(/^\s+|\s+$/g, '');
+		if (!n) return;
+		getJSON('/dungeons/add?name=' + encodeURIComponent(n), function(r, err) {
+			if (err || !r.ok) return status('Save failed: ' + (err || r.error), true);
+			DUNGEONS = { dungeons: r.dungeons };
+			nameInp.value = '';
+			status('Saved "' + n + '" = zone ' + STATE.zone);
+			paint();
+		});
+	};
+	addRow.appendChild(nameInp);
+	addRow.appendChild(saveBtn);
+	box.appendChild(addRow);
+
+	var custom = null;
+	function paint() {
+		var q = search.value.toLowerCase();
+		list.innerHTML = '';
+		var shown = 0;
+		(DUNGEONS.dungeons || []).forEach(function(d) {
+			if (q && String(d.name).toLowerCase().indexOf(q) === -1) return;
+			shown++;
+			var opt = document.createElement('div');
+			opt.className = 'opt';
+			var n = document.createElement('div');
+			n.appendChild(document.createTextNode(d.note ? d.name + ' - ' + d.note : d.name));
+			var i = document.createElement('div');
+			i.className = 'id';
+			i.appendChild(document.createTextNode('contId ' + d.contId));
+			opt.appendChild(n); opt.appendChild(i);
+			opt.onclick = function() { send('enter_dungeon ' + d.contId + ' ' + (idx.value || '0'), opt); };
+			list.appendChild(opt);
+		});
+		if (custom) {
+			var opt = document.createElement('div');
+			opt.className = 'opt';
+			var n2 = document.createElement('div');
+			n2.appendChild(document.createTextNode(custom.name));
+			var i2 = document.createElement('div');
+			i2.className = 'id';
+			i2.appendChild(document.createTextNode('contId ' + custom.contId + ' (current)'));
+			opt.appendChild(n2); opt.appendChild(i2);
+			opt.onclick = function() { send('enter_dungeon ' + custom.contId + ' ' + (idx.value || '0'), opt); };
+			list.appendChild(opt);
+			shown++;
+		}
+		if (!shown) {
+			var e = document.createElement('div');
+			e.className = 'empty';
+			e.appendChild(document.createTextNode('No match. Enter one in game, then "Save current zone".'));
+			list.appendChild(e);
+		}
+	}
+	bindInput(search, paint);
+	watchValue(search, paint);
+	paint();
+}
+
+// ---------- item search -> /@makeitems ----------
+function renderItemSearch(box) {
+	var row = document.createElement('div');
+	row.className = 'row';
+	var q = document.createElement('input');
+	q.type = 'text';
+	q.className = 'grow60';
+	q.placeholder = 'Search item names...';
+	var btn = document.createElement('button');
+	btn.appendChild(document.createTextNode('Search'));
+	row.appendChild(q); row.appendChild(btn);
+	box.appendChild(row);
+
+	// Selected items shown as removable chips so the pending command is visible.
+	var chips = document.createElement('div');
+	chips.className = 'chips';
+	box.appendChild(chips);
+
+	var qty = document.createElement('div');
+	qty.className = 'row';
+	qty.style.marginTop = '6px';
+	var qtyInp = document.createElement('input');
+	qtyInp.type = 'text';
+	qtyInp.className = 'num';
+	qtyInp.value = '1';
+	qty.appendChild(qtyInp);
+	var sendSel = document.createElement('button');
+	sendSel.appendChild(document.createTextNode('Makeitems selected'));
+	sendSel.onclick = function() {
+		if (!selectedItems.length) return status('No items selected', true);
+		send('makeitems ' + selectedItems.join(' ') + ' ' + (qtyInp.value || '1'), sendSel);
+	};
+	var clearSel = document.createElement('button');
+	clearSel.appendChild(document.createTextNode('Clear'));
+	clearSel.onclick = function() {
+		selectedItems = [];
+		paintChips();
+	};
+	qty.appendChild(sendSel);
+	qty.appendChild(clearSel);
+	box.appendChild(qty);
+
+	var list = document.createElement('div');
+	list.className = 'list';
+	box.appendChild(list);
+
+	function paintChips() {
+		chips.innerHTML = '';
+		if (!selectedItems.length) {
+			chips.appendChild(document.createTextNode(''));
+			return;
+		}
+		selectedItems.forEach(function(id, idx) {
+			var chip = document.createElement('span');
+			chip.className = 'chip';
+			var label = document.createElement('span');
+			label.appendChild(document.createTextNode(String(id)));
+			var x = document.createElement('span');
+			x.className = 'chip-x';
+			x.appendChild(document.createTextNode('x'));
+			x.onclick = function() {
+				selectedItems.splice(idx, 1);
+				paintChips();
+			};
+			chip.appendChild(label);
+			chip.appendChild(x);
+			chips.appendChild(chip);
+		});
+	}
+
+	q.onkeydown = function(e) { if (e.keyCode == 13) btn.onclick(); };
+	btn.onclick = function() {
+		var term = q.value.replace(/^\s+|\s+$/g, '');
+		if (term.length < 2) return;
+		list.innerHTML = '<div class="empty">searching...</div>';
+		getJSON('/items?q=' + encodeURIComponent(term), function(res, err) {
+			list.innerHTML = '';
+			if (err || !res) return list.innerHTML = '<div class="empty">Search failed</div>';
+			if (!res.length) return list.innerHTML = '<div class="empty">No items matched "' + esc(term) + '"</div>';
+			// Two-column table so every result is exactly one row: name left, id right.
+			// A <label> would be inline and pack several rows per line.
+			var table = document.createElement('table');
+			table.className = 'picks';
+			res.forEach(function(it) {
+				var tr = document.createElement('tr');
+				tr.className = 'pick';
+
+				var nameCell = document.createElement('td');
+				nameCell.className = 'nm';
+				var cb = document.createElement('input');
+				cb.type = 'checkbox';
+				cb.checked = selectedItems.indexOf(it.id) !== -1;
+				if (cb.checked) tr.className += ' active';
+				cb.onchange = function() {
+					var at = selectedItems.indexOf(it.id);
+					if (cb.checked && at === -1) selectedItems.push(it.id);
+					if (!cb.checked && at !== -1) selectedItems.splice(at, 1);
+					if (cb.checked) tr.className = 'pick active';
+					else tr.className = 'pick';
+					paintChips();
+				};
+				// A <label> used to give click-the-row-to-toggle for free; a table
+				// row does not, so re-add it (ignoring clicks on the checkbox
+				// itself, which already toggled via onchange).
+				tr.onclick = function(e) {
+					if (e && e.target === cb) return;
+					cb.checked = !cb.checked;
+					cb.onchange();
+				};
+				nameCell.appendChild(cb);
+				nameCell.appendChild(document.createTextNode(it.name));
+
+				var idCell = document.createElement('td');
+				idCell.className = 'id';
+				idCell.appendChild(document.createTextNode(String(it.id)));
+
+				tr.appendChild(nameCell);
+				tr.appendChild(idCell);
+				table.appendChild(tr);
+			});
+			list.appendChild(table);
+		});
+	};
+	paintChips();
+}
+
+// ---------- gear sets (from the spreadsheet) ----------
+// ---------- questing: search lines + quests, START / NEXT STEP ----------
+// Quest lines are collapsible headers carrying no buttons; only the quests
+// inside a line get buttons. Everything starts collapsed, so 2735 quests render
+// as 41 headers instead of thousands of DOM nodes in a slow browser engine.
+var questExpanded = {};   // line key -> true, survives filtering while typing
+var SEARCH_CAPS = { perLine: 60, total: 200, loose: 120 };
+
+function renderQuests(box) {
+	var searchRow = document.createElement('div');
+	searchRow.className = 'row';
+	var q = document.createElement('input');
+	q.type = 'text';
+	q.className = 'w100';
+	q.placeholder = 'Search quest lines and quests...';
+	searchRow.appendChild(q);
+	box.appendChild(searchRow);
+
+	var info = document.createElement('div');
+	info.className = 'hint';
+	info.style.margin = '4px 0 2px';
+	box.appendChild(info);
+
+	var list = document.createElement('div');
+	list.className = 'list';
+	box.appendChild(list);
+
+	function hits(list, term) {
+		var out = [];
+		for (var i = 0; i < list.length; i++) {
+			if (list[i].name.toLowerCase().indexOf(term) !== -1) out.push(list[i]);
+		}
+		return out;
+	}
+
+	function note(html) {
+		var d = document.createElement('div');
+		d.className = 'qnote';
+		d.innerHTML = html;
+		return d;
+	}
+
+	function lineHeader(line, key, open, suffix) {
+		var h = document.createElement('div');
+		h.className = 'qline';
+		var arrow = document.createElement('span');
+		arrow.className = 'qarrow';
+		arrow.appendChild(document.createTextNode(open ? 'v' : '>'));
+		var nm = document.createElement('span');
+		nm.appendChild(document.createTextNode(line.name));
+		var ct = document.createElement('span');
+		ct.className = 'qcount';
+		ct.appendChild(document.createTextNode(line.quests.length + ' quests' + (suffix ? ', ' + suffix : '')));
+		h.appendChild(arrow);
+		h.appendChild(nm);
+		h.appendChild(ct);
+		h.onclick = function() { questExpanded[key] = !questExpanded[key]; paint(); };
+		return h;
+	}
+
+	function questRow(qst) {
+		var row = document.createElement('div');
+		row.className = 'qrow';
+		var nm = document.createElement('span');
+		nm.className = 'qname';
+		nm.appendChild(document.createTextNode(qst.name));
+		var id = document.createElement('span');
+		id.className = 'qid';
+		id.appendChild(document.createTextNode(String(qst.id)));
+		var btns = document.createElement('span');
+		btns.className = 'qbtns';
+		var bStart = document.createElement('button');
+		bStart.appendChild(document.createTextNode('START'));
+		bStart.onclick = function() { send('start_quest ' + qst.id, bStart); };
+		var bNext = document.createElement('button');
+		bNext.appendChild(document.createTextNode('NEXT STEP'));
+		bNext.onclick = function() { send('next_task ' + qst.id, bNext); };
+		btns.appendChild(bStart);
+		btns.appendChild(bNext);
+		row.appendChild(nm);
+		row.appendChild(id);
+		row.appendChild(btns);
+		return row;
+	}
+
+	function paint() {
+		var term = q.value.replace(/^\s+|\s+$/g, '').toLowerCase();
+		list.innerHTML = '';
+
+		if (!QUEST_INDEX.counts || !QUEST_INDEX.counts.quests) {
+			info.innerHTML = questError
+				? 'Quest data unavailable: ' + esc(questError)
+				: 'Loading quests...';
+			return;
+		}
+		info.innerHTML = esc(QUEST_INDEX.counts.quests) + ' quests &middot; '
+			+ esc(QUEST_INDEX.counts.lines) + ' lines';
+
+		var rendered = 0;
+		for (var i = 0; i < QUEST_INDEX.lines.length; i++) {
+			var line = QUEST_INDEX.lines[i];
+			var lineHit = !term || line.name.toLowerCase().indexOf(term) !== -1;
+			var questHits = term ? hits(line.quests, term) : [];
+			if (term && !lineHit && !questHits.length) continue;
+
+			var key = 'L' + line.id;
+			var open = questExpanded[key] || (term && (lineHit || questHits.length));
+			list.appendChild(lineHeader(line, key, open,
+				(term && !lineHit && questHits.length) ? questHits.length + ' matching' : ''));
+
+			if (!open) continue;
+			var show = (term && !lineHit) ? questHits : line.quests;
+			var cap = Math.min(show.length, term ? SEARCH_CAPS.perLine : show.length);
+			for (var k = 0; k < cap && rendered < SEARCH_CAPS.total; k++) {
+				list.appendChild(questRow(show[k]));
+				rendered++;
+			}
+			if (show.length > cap) list.appendChild(note('&nbsp;&nbsp;+' + (show.length - cap) + ' more in this line'));
+		}
+
+		// Quests in no line. Hidden entirely while searching if nothing matches.
+		if (QUEST_INDEX.loose.length) {
+			var looseHits = term ? hits(QUEST_INDEX.loose, term) : QUEST_INDEX.loose;
+			if (!term || looseHits.length) {
+				var looseKey = 'loose';
+				var looseOpen = questExpanded[looseKey] || (term && looseHits.length);
+				var lh = document.createElement('div');
+				lh.className = 'qline';
+				var arrow = document.createElement('span');
+				arrow.className = 'qarrow';
+				arrow.appendChild(document.createTextNode(looseOpen ? 'v' : '>'));
+				var nm = document.createElement('span');
+				nm.appendChild(document.createTextNode('Other quests'));
+				var ct = document.createElement('span');
+				ct.className = 'qcount';
+				ct.appendChild(document.createTextNode(
+					QUEST_INDEX.loose.length + (term ? ' / ' + looseHits.length + ' matching' : '')));
+				lh.appendChild(arrow);
+				lh.appendChild(nm);
+				lh.appendChild(ct);
+				lh.onclick = function() { questExpanded[looseKey] = !questExpanded[looseKey]; paint(); };
+				list.appendChild(lh);
+
+				if (looseOpen) {
+					var showLoose = term ? looseHits : QUEST_INDEX.loose;
+					var lcap = Math.min(showLoose.length, SEARCH_CAPS.loose);
+					for (var m = 0; m < lcap; m++) list.appendChild(questRow(showLoose[m]));
+					if (showLoose.length > lcap)
+						list.appendChild(note('&nbsp;&nbsp;+' + (showLoose.length - lcap) + ' more - keep typing to narrow'));
+				}
+			}
+		}
+
+		if (!list.children.length) {
+			var none = document.createElement('div');
+			none.className = 'empty';
+			none.appendChild(document.createTextNode('No quest or line matches "' + term + '"'));
+			list.appendChild(none);
+		}
+	}
+
+	bindInput(q, paint);
+	watchValue(q, paint);
+	paint();
+}
+
+// ---------- gear sets (from the spreadsheet) ----------
+function renderGearsets(box) {
+	var row = document.createElement('div');
+	row.className = 'row';
+
+	// Text filters (substring, case-insensitive). Bind every event an old engine
+	// might emit, and show the match count so filtering is always observable.
+	var filters = {};
+	var filterInputs = {};
+	(GEARSETS.filters || []).forEach(function(f) {
+		filters[f.key] = '';
+		var inp = document.createElement('input');
+		inp.type = 'text';
+		inp.className = 'grow30';
+		inp.placeholder = f.label;
+		var onFilter = function() { filters[f.key] = inp.value.replace(/^\s+|\s+$/g, '').toLowerCase(); paint(); };
+		bindInput(inp, onFilter);
+		watchValue(inp, onFilter);
+		filterInputs[f.key] = inp;
+		row.appendChild(inp);
+	});
+	var clearBtn = document.createElement('button');
+	clearBtn.appendChild(document.createTextNode('Clear'));
+	clearBtn.title = 'Reset all filters';
+	clearBtn.onclick = function() {
+		for (var k in filterInputs) { filterInputs[k].value = ''; filters[k] = ''; }
+		paint();
+	};
+	row.appendChild(clearBtn);
+	box.appendChild(row);
+
+	var ctlRow = document.createElement('div');
+	ctlRow.className = 'row';
+	ctlRow.style.marginTop = '6px';
+	var qtyInp = document.createElement('input');
+	qtyInp.type = 'text';
+	qtyInp.className = 'num';
+	qtyInp.value = '1';
+	var sendBtn = document.createElement('button');
+	sendBtn.appendChild(document.createTextNode('Send'));
+	sendBtn.onclick = function() { if (selected) send(previewCmd, sendBtn); };
+	var count = document.createElement('span');
+	count.className = 'hint';
+	count.appendChild(document.createTextNode(''));
+	ctlRow.appendChild(count);
+	ctlRow.appendChild(qtyInp);
+	ctlRow.appendChild(sendBtn);
+	box.appendChild(ctlRow);
+
+	var preview = document.createElement('div');
+	preview.className = 'preview';
+	preview.appendChild(document.createTextNode('Select a gear set.'));
+	box.appendChild(preview);
+
+	var names = document.createElement('div');
+	names.className = 'names';
+	box.appendChild(names);
+
+	var list = document.createElement('div');
+	list.className = 'list';
+	list.style.marginTop = '6px';
+	box.appendChild(list);
+
+	var selected = null;
+	var previewCmd = null;
+
+	function refreshPreview() {
+		if (!selected) {
+			preview.innerHTML = 'Select a gear set.';
+			previewCmd = null;
+			names.innerHTML = '';
+			return;
+		}
+		previewCmd = 'makeitems ' + selected.items.join(' ') + ' ' + (qtyInp.value || '1');
+		preview.innerHTML = esc(previewCmd);
+		showItemNames(selected.items);
+	}
+
+	function showItemNames(ids) {
+		names.innerHTML = 'resolving names...';
+		getJSON('/names?ids=' + ids.join(','), function(map, err) {
+			if (err || !map) { names.innerHTML = ''; return; }
+			var slots = GEARSETS.slotNames || [];
+			var html = [];
+			for (var i = 0; i < ids.length; i++) {
+				var slot = slots[i] ? slots[i] + ': ' : '';
+				html.push(slot + (map[ids[i]] || ids[i]));
+			}
+			names.innerHTML = esc(html.join(' | '));
+		});
+	}
+
+	function paint() {
+		list.innerHTML = '';
+		var matches = (GEARSETS.sets || []).filter(function(s) {
+			for (var k in filters) {
+				var q = filters[k];
+				if (q && String(s[k] || '').toLowerCase().indexOf(q) === -1) return false;
+			}
+			return true;
+		});
+		var total = (GEARSETS.sets || []).length;
+		count.innerHTML = matches.length + (matches.length === total ? ' sets' : ' of ' + total);
+		if (!matches.length) {
+			var e = document.createElement('div');
+			e.className = 'empty';
+			e.appendChild(document.createTextNode((GEARSETS.sets || []).length
+				? 'No gear set matches those filters.'
+				: 'No gear sets in gearsets.json yet.'));
+			list.appendChild(e);
+			selected = null;
+			refreshPreview();
+			return;
+		}
+		matches.slice(0, 200).forEach(function(s) {
+			var opt = document.createElement('div');
+			opt.className = 'opt';
+			var n = document.createElement('div');
+			n.appendChild(document.createTextNode(s.name));
+			var c = document.createElement('div');
+			c.className = 'id';
+			c.appendChild(document.createTextNode(s.items.length + ' items'));
+			opt.appendChild(n); opt.appendChild(c);
+			opt.onclick = function() {
+				var opts = list.getElementsByClassName('opt');
+				for (var i = 0; i < opts.length; i++) opts[i].className = 'opt';
+				opt.className = 'opt active';
+				selected = s;
+				refreshPreview();
+			};
+			list.appendChild(opt);
+		});
+	}
+
+	qtyInp.onchange = refreshPreview;
+	paint();
+}
+
+// ---------- search filter ----------
+function applyFilter() {
+	var q = document.getElementById('search').value.toLowerCase();
+	var items = document.getElementsByClassName('item');
+	for (var i = 0; i < items.length; i++) {
+		var it = items[i];
+		var s = it.getAttribute('data-search') || '';
+		it.style.display = (!q || s.indexOf(q) !== -1) ? '' : 'none';
+	}
+	var secs = document.getElementsByClassName('sec');
+	for (var j = 0; j < secs.length; j++) {
+		var any = false;
+		var kids = secs[j].getElementsByClassName('item');
+		for (var k = 0; k < kids.length; k++) if (kids[k].style.display !== 'none') any = true;
+		secs[j].style.display = any ? '' : 'none';
+	}
+}
+</script>
+</body>
+</html>

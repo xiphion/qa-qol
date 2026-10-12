@@ -1,0 +1,123 @@
+{
+	"sections": [
+		{
+			"title": "SPEEDRUN",
+			"dense": true,
+			"items": [
+				{
+					"type": "group",
+					"items": [
+						{
+							"type": "options",
+							"label": "Speed",
+							"cmd": "/@speed",
+							"hint": "multiplier",
+							"options": [
+								{ "label": "1.0", "args": "1" },
+								{ "label": "3", "args": "3" },
+								{ "label": "5", "args": "5" }
+							]
+						},
+						{
+							"type": "options",
+							"label": "Kill range",
+							"cmd": "/@kill",
+							"hint": "UU",
+							"options": [
+								{ "label": "100", "args": "100" },
+								{ "label": "300", "args": "300" },
+								{ "label": "500", "args": "500" },
+								{ "label": "1000", "args": "1000" }
+							]
+						}
+					]
+				},
+				{
+					"type": "group",
+					"items": [
+						{ "type": "toggle", "label": "No die", "cmd": "/@nodie" },
+						{ "type": "toggle", "label": "No cooldown", "cmd": "/@nocool" },
+						{ "type": "toggle", "label": "MP full", "cmd": "/@mpfull" }
+					]
+				},
+				{
+					"type": "dungeons",
+					"label": "Dungeons",
+					"hint": "enter dungeon by name"
+				},
+				{ "type": "items", "label": "Item search", "hint": "search item names" },
+				{ "type": "gearsets", "label": "Gear sets", "hint": "dungeon / damage type / class" }
+			]
+		},
+		{
+			"title": "NICHE",
+			"items": [
+				{
+					"type": "options",
+					"label": "Perfect level",
+					"cmd": "/@perfect_level",
+					"hint": "level + skills",
+					"allowCustom": true,
+					"options": [
+						{ "label": "60", "args": "60" },
+						{ "label": "62", "args": "62" },
+						{ "label": "65", "args": "65" }
+					]
+				},
+				{
+					"type": "options",
+					"label": "Level",
+					"cmd": "/@level",
+					"hint": "level only",
+					"allowCustom": true,
+					"options": [
+						{ "label": "60", "args": "60" },
+						{ "label": "62", "args": "62" },
+						{ "label": "65", "args": "65" }
+					]
+				},
+				{ "type": "cmd", "label": "Clear all skills", "cmd": "/@clear_all_skill", "chain": [
+					{ "label": "Give thread passive item", "cmd": "/@insert_item 283999 1", "defaultOn": true }
+				] },
+				{ "type": "cmd", "label": "Clear all achievements", "cmd": "/@clear_all_achievement" },
+				{
+					"type": "options",
+					"label": "Clear all crests",
+					"cmd": "/@clear_all_crest",
+					"hint": "no arg only disables",
+					"options": [
+						{ "label": "Disable only", "args": "" },
+						{ "label": "Reset to 0", "args": "0" }
+					]
+				},
+				{
+					"type": "group",
+					"items": [
+						{ "type": "teleport", "label": "Teleport", "cmd": "/@teleport", "hint": "zone + coordinates" },
+						{ "type": "input", "label": "Goto player", "cmd": "/@goto", "placeholder": "character name" }
+					]
+				},
+				{ "type": "quests", "label": "Questing", "hint": "search quest lines and quests" },
+				{
+					"type": "group",
+					"items": [
+						{
+							"type": "cmd",
+							"label": "Resurrect",
+							"cmd": "/@resurrection",
+							"auto": { "label": "Auto revive after", "cmd": "/@resurrection", "defaultSeconds": 5 }
+						},
+						{ "type": "cmd", "label": "Accept revival", "cmd": "/@accept_revival" }
+					]
+				}
+			]
+		}
+	],
+	"actions": [
+		{
+			"id": "reset",
+			"label": "Reset all cheats",
+			"cmds": ["speed 1", "nodie off", "nocool off", "mpfull off"]
+		}
+	]
+}

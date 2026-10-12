@@ -1,0 +1,192 @@
+/@add_allunionguild_seasoncp
+/@add_allunionmember_seasoncp
+/@add_guild_skill [Skill ID] [Guildmaster Skill: 0|1] [Permanent Skill: [0|1] //Guild Skill
+/@add_guildmember [count]
+/@add_package [PackageId] [ExpireSecond] {[UserName]} //Account Trait Package setting
+/@addcompetitionpoint
+/@addunioncommanderpolicyhistory
+/@addunionconsulpolicyhistory
+/@addunionelitepolicyhistory
+/@addunionmemberhistory
+/@apply_party //party support
+/@assign_floating_castle Floatability ID //Floating payment
+/@assign_guild_emblem Emblem Type, Emblem Id //Giving Guild Emblem
+/@battlechip_add //Tactical book payment
+/@battlechip_pay //Guild tactics book issued according to conditions
+/@battlefield [battleFieldId other-username] //enter the battlefield
+/@blocklist_max [count] //Change the number of users that can be blocked
+/@BOT_check //
+/@BOT_recvmsg //
+/@change_achievement_season [Season ID] //Change achievement season
+/@change_loading_screen_status [Loading Screen Control Status] //Loading Screen Control
+/@change_pr //Change PR text
+/@change_shop_status //change shop status
+/@change_voice //
+/@char_record character recording //character recording
+/@char_record_end Stop character recording // Stop character recording
+/@check_simple_tip simpleTipId // Check with this simple tip
+/@chrono_debug [mode] //chronoscroll debug mode
+/@clear_all_serverachievement // Initialize all server achievements
+/@clear_bf_cool //Clear all battlefield cooldown and entry count
+/@clear_board //Climbing bulletin board writing [id] [content] [number]
+/@clear_inven // clear all inventory
+/@clear_package {[UserName]} //Account Trait Package initialization
+/@clear_parcel [character name] // empty the parcel of the target character
+/@clear_recipe // clear RECIPE
+/@clear_serverachievement [id] // Initialize server achievement
+/@clear_simple_tip //initialize simple tip check information
+/@clear_vote_cool // Clear all voting cooldown
+/@collect_floating_castle Float ID //Float recovery
+/@collect_guild_emblem Emblem Type, Emblem Id //Giving Guild Emblem
+/@connection //close connection
+/@crash_arbiter // crash the arbiter
+/@create_bill_account // create account
+/@create_guild [guild-name] [first-username] //Create a new guild
+/@create_many_guilds [count:1~99] //Create a lot of guilds (Give basic guild membership conditions)
+/@create_system_guild [guild name] //Create a new system guild
+/@create_user [username] // create a new character
+/@dailyevent [dayOfWeek] //Change the date of the day of the week (0:None 1:Sun 2:Mon ... 7:Sat)
+/@dbg_break //debug-Force break point exception
+/@dis // just disconnect the client test
+/@dr_enable_event [ezid] [option] //Enable Nexus EventZone
+/@dr_enable_time [groupId] [baseTime]//Enable Nexus Schedules
+/@dungeon_log [on/off] //Enable dungeon log
+/@escape character name //Move to somewhere
+/@fund_coin [Funding amount] //Cash charge
+/@gc_add_battle_chip [guildCount] / Guilds uprising with tactical chips
+/@gc_add_many_score [contentinfoid] [score] [guidleagueInCount]
+/@gc_add_score [contentinfoid] [score] //Add content score	
+/@gc_calc_contents_rank //Recalculate Guild Competition Content Rankings
+/@gc_enter_guild [Leagueld] //Participate in guild competition
+/@gc_guildscore_view [contentsid] [guildname] //길드 점수 보기	
+/@gc_new_season //Skip the Guild Competition Season
+/@gc_renewal //Guild Competition Extra Edition
+/@gc_renewal_coin //Guild Competition Coin Settlement
+/@gc_score_view [contentsId] [userName] //View guild competition individual scores
+/@gc_set_score [guildname] [score] //Setting the overall score for the guild competition
+/@gc_show_rank [Leagueld] //View League Ranking Score
+/@guild_join_cooltime //Set the guild re-join cooltime
+/@Guildaddmax [amount] //100 is the maximum number of guild members up to 100, 0 is the original
+/@guildlevelexpire Change the guild level maintenance period [minutes] //
+/@guildlevelextendexpire Change the Guild Level Maintenance Extension Period//
+/@guildwar_immediate //Start immediately with all guild wars waiting to be progressed
+/@help [keyword] //Search QA command
+/@huntingevent_add [type] [hz] [val] [duration] //Add hunter event
+/@huntingevent_remove [event id] //remove hunter event
+/@import_characters //
+/@info_dungeon //Display the output contents of [Basic information]>[Indones]
+/@init_awesomium // Initialize Awesomium
+/@init_limited_gacha [gachaId] //init LimitedGacha
+/@insert_floating_castle_parts PartId //Add parts to parts inventory
+/@leave_union
+/@limited_gacha_go_next_bucket [gachaId] [1/0] //go next bucket
+/@logout // logout test
+/@lord_behavior [behavior-type-id] //Send lord achievement behavior test message
+/@masterpiece //
+/@nextseasonstatus
+/@nextuniondungeonschedule
+/@nextuniondungeonstatus
+/@nexus_broadcast //
+/@nexus_bypass //
+/@nounionskillcooltime
+/@observer_mode [on/off] //enable/disable observer mode
+/@open_awesomium [URL] //Awesomium dialog open & navigate
+/@parcelreturn Parcel return time // Parcel return time
+/@party [point] //Add friendliness to friends among party members
+/@pchannel_max [count] // Change the number of users who can enter the private chat channel
+/@pk_section [area id] [section id] [on/off] //Pk OnOff for each section
+/@profile //Profiling
+/@ps_activate_election //Activate the permanent system
+/@ps_add_point [point] //Add competitive point
+/@ps_calc_tax // Compulsory tax settlement / Permanent residents only
+/@ps_candidacy_membercount [member-count] //Adjust the number of guild members required for candidate registration
+/@ps_clear_election //initialize permanent residence and election information
+/@ps_com_window [continent number] [0:voting 1: battlefield] //View the lord competition window
+/@ps_go_next //Forcing the next permanent residence election stage
+/@ps_guard_info [guardId] //View guard information
+/@ps_guard_window //Open guard info window
+/@ps_gw_point [Point] //Change the competition point for the permanent guild battle
+/@ps_gw_reset //Reset the limit for acquiring competitive points in the permanent guild battle
+/@ps_gw_time [Hour] //Change the reset time limit for acquiring competitive points in the permanent guild battle
+/@ps_im_king [guardId] //Roman crowned
+/@ps_maketax [value] // Change the total tax amount
+/@ps_period_minute [minute] //Replace the permanent election period in minutes
+/@ps_planet_vote on/off // 1 vote for 1 account on all servers
+/@ps_policy_point [point] //Change policy point / Only permanent residents
+/@ps_reg_window //Open the registration window for permanent residence candidates
+/@ps_vote_count [count] //manipulate the number of votes
+/@ps_vote_window //Open the voting window for permanent residence
+/@ps_world_tick [sec] //Change world tick
+/@publisher experience acquisition
+/@purchase_prod [ProductID] //Purchase product
+/@qatest on/off //
+/@query_point //Search Cash point
+/@rank_next_season [dungeonId id] // Record Competition Pass the dungeon season
+/@rank_sort //Calculate the ranking of the record competition immediately
+/@refresh_inven //
+/@reg_party //Register party match
+/@reload_ir //InputRestrictionData.xml Reload
+/@reload_netm //NetModeratorConfig.xml Reload
+/@reload_shop_data //Reload shop data
+/@reserve_festival [EventId] [StartTime] [EndTime] //Reserve world event
+/@reset_admin_reward // Reset admin reward record
+/@reset_dungeon //reset all indnes
+/@reset_event_mail [event ID] //reset event mail
+/@reset_floating_castle_parts_cooltime Reset floating parts cool time //Reset floating parts cool time
+/@reset_guildwar_toggle_cool //Toggle Guild War Allowed Status Reset Cooldown
+/@reset_profile //reset profile data
+/@send_mass_parcel //For testing sending large mail to me
+/@set_account_res_level [level] //Set the limit account level
+/@set_admin_level character name level //for debug/admin commands
+/@set_arbiter_worldparam [param-name] [param-value] //Modify WorldParam
+/@set_awesomium_debug_mode [on/off] //Sets awsomium DebugMode
+/@set_awesomium_web_url [url] //Set awsomium URL
+/@set_bf_result //Reset Battleground Rating
+/@set_board_clear_time //Set the reset time for the number of creations of the climbing board [hour/minute]
+/@set_bypass on/off // turn off and on bypass
+/@set_chat_ban [set_chat_ban] //set_chat_ban
+/@set_dungeoncool [dungeonId] [minutes] //Set the dungeon cooldown
+/@set_escrow_return_wait // Set the escrow return waiting time
+/@set_festival_spawn_object_count
+/@set_floating_castle_coin Additional Points //Add Parts Shop Coin
+/@set_go on/off //GO character set
+/@set_guild_rec //Adjust the number of guild recommendations
+/@set_logout_time character name year month day // designate logout time
+/@set_max_recv_mail_cnt // Set the maximum number of inboxes
+/@set_max_send_mail_cnt //Set the maximum number of sent mail
+/@set_new_member [on/off] //Set whether a new user is
+/@set_pcbang [on/off] //Set whether you are a pcbang user
+/@set_play_limit limit //Maximum to create queue
+/@set_referer [RefererName] [RefereeName] //Refer-A-Friend set inviter
+/@set_trade_broker_remain_hours //Set the remaining expiration time for items registered in the trading agency
+/@set_union
+/@setunionstatus
+/@show_cand //View applicant list
+/@show_party //View party match list
+/@show_union
+/@showcompetitionpoint
+/@showplaypoint
+/@start_festival [EventId] //start world event
+/@sticktogether //
+/@stop_festival [EventId] //World event ends
+/@sysconfig [new config value] //change system configuration
+/@tb_avg_price // Clear all average transaction price of the trading agency
+/@test_off // End the program test
+/@test_on Test type, other parameters // Start program test
+/@testautomation_clear_allusers_completely //For test automation-Completely delete all users of the current account (non-recoverable)
+/@testitem [testItem] //TestItem
+/@toggle_guildwar_acceptable //Toggle guild war allowed status
+/@turn_ir [on|off] // Turn Input Restriction on and off
+/@turn_netm [on|off] // Turn Net Moderator on and off
+/@tutorial on/off // tutorial play
+/@tutorialPlayer on/off // Forced setting to see if the guy needs to play the tutorial
+/@union_season [on/off/next]//
+/@union_season_admin [on/off/next]//
+/@unlock_all_movies // Unlock all videos
+/@unreg_party // delete party match
+/@usage // IO related usage rate
+/@versionInfoHide //
+/@ware_duration [time in seconds] //Adjust warehouse fee period
+/@warehousegold_max [amount] //100 can be stored in the warehouse up to KRW 100 0 is the original
+/@world_of_party_match //
+/@write_board //Climbing bulletin board writing [id] [content] [number]

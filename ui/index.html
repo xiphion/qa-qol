@@ -1,361 +1,1139 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QA Menu</title>
 <style>
-	* { box-sizing: border-box; }
-	body { background: #14181f; color: #e6e9ef; font: 13px/1.45 "Segoe UI", Tahoma, sans-serif; margin: 0; padding: 0; }
 	/* ---------------------------------------------------------------------------
-	   NOTE: no flexbox anywhere. Awesomium predates flex support, so every flex
-	   rule is silently ignored and controls stack vertically. Horizontal layout
-	   here = inline-block + margins (supported since IE4). Vertical alignment =
-	   vertical-align. Gaps = margins, never the flex gap property.
+	   The panel runs in the Tauri overlay (WebView2), so this is a current
+	   Chromium: flexbox, grid, custom properties and :focus-visible all work.
 	   --------------------------------------------------------------------------- */
+	*, *::before, *::after { box-sizing: border-box; }
 
-	#topbar { position: fixed; top: 0; left: 0; right: 0; background: #1b2029; border-bottom: 1px solid #2c3441; padding: 8px 10px; z-index: 5; }
-	#topbar .row > * { margin: 0 6px 0 0; vertical-align: middle; }
-	.brand { font-weight: 700; color: #7cc4ff; letter-spacing: 0.5px; }
-	#info { color: #9aa7b8; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-	#info b { color: #e6e9ef; font-weight: 600; }
-	#searchrow { position: fixed; top: 40px; left: 0; right: 0; background: #14181f; padding: 8px 10px; border-bottom: 1px solid #243040; z-index: 4; }
-	#search { width: 100%; background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 6px 8px; font-family: inherit; font-size: 13px; }
-	#search:focus { outline: none; border-color: #4a7fbf; }
-	#sections { padding: 96px 10px 46px; }
-	#status { position: fixed; bottom: 0; left: 0; right: 0; background: #1b2029; border-top: 1px solid #2c3441; padding: 6px 10px; color: #8fd18f; font-size: 12px; min-height: 26px; }
-	#status.err { color: #ff8f8f; }
+	:root {
+		color-scheme: dark;
+		--bg: #10141b;
+		--chrome: #141922;
+		--surface: #171d26;
+		--surface-2: #1c232e;
+		--surface-3: #242d3a;
+		--line: #2b3543;
+		--line-soft: #202834;
+		--text: #e7ebf2;
+		--muted: #97a3b6;
+		--dim: #6b788c;
+		--accent: #4c9aff;
+		--accent-ink: #d8e9ff;
+		--accent-soft: rgba(76, 154, 255, .16);
+		--danger: #ef5f6b;
+		--danger-ink: #ffc2c6;
+		--danger-soft: rgba(239, 95, 107, .14);
+		--ok: #6cd08f;
+		--radius: 10px;
+		--radius-sm: 7px;
+		--gap: 8px;
+	}
 
-	.sec { margin-bottom: 14px; }
-	.sec.dense { margin-bottom: 10px; }
-	.sec > h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6f7f95; margin: 0 0 6px; border-bottom: 1px solid #243040; padding-bottom: 3px; }
-	.sec > h2::before { content: ''; display: inline-block; width: 4px; height: 4px; background: #4a9eff; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-	.sec.dense > h2 { margin-bottom: 4px; }
-	.item { background: #1b2029; border: 1px solid #27313f; border-radius: 4px; padding: 8px; margin-bottom: 6px; }
-	.item .label { font-weight: 600; margin-bottom: 6px; }
-	.item .hint { color: #6f7f95; font-weight: 400; font-size: 11px; margin-left: 6px; }
-	.sec.dense .item { padding: 5px 6px; margin-bottom: 4px; }
-	.sec.dense .item .label { margin-bottom: 4px; }
+	html { height: 100%; }
+	body {
+		margin: 0;
+		min-height: 100%;
+		background: var(--bg);
+		color: var(--text);
+		font: 13px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+		-webkit-font-smoothing: antialiased;
+	}
 
-	/* Button/input row. Spacing comes from child margins. Do NOT use the
-	   `font-size:0` whitespace trick here: inputs match their font via
-	   `font-family/size` (not `font: inherit`), because `input[type=text]` is
-	   specificity (0,1,1) and would beat `.row > *` (0,1,0). That collision
-	   collapsed every input in a row to zero-width text. */
-	.row { }
-	.row > * { vertical-align: middle; margin: 0 4px 4px 0; }
-	.sec.dense .row > * { margin: 0 3px 3px 0; }
-	.grow { }
-	.w100 { width: 100%; }
-	.grow60 { width: 60%; }
-	.grow30 { width: 30%; }
-	.spacer { display: block; height: 0; }
+	::-webkit-scrollbar { width: 10px; height: 10px; }
+	::-webkit-scrollbar-track { background: transparent; }
+	::-webkit-scrollbar-thumb { background: #2c3644; border-radius: 6px; border: 2px solid var(--bg); }
+	::-webkit-scrollbar-thumb:hover { background: #3b4859; }
 
-	/* Columns: equal-width inline-block cells with a margin gutter. */
-	.itemrow { display: block; overflow: hidden; margin: 0 -4px; }
-	.itemcell { display: inline-block; vertical-align: top; padding: 0 4px; }
-	.itemcell .item { background: none; border: none; padding: 0; margin: 0; }
-	.itemcell .item .label { margin-bottom: 3px; }
+	/* ---- title bar ------------------------------------------------------- */
+	.titlebar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 34px;
+		padding: 0 6px 0 12px;
+		background: #0d1117;
+		border-bottom: 1px solid var(--line);
+	}
+	.title-drag {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex: 1;
+		min-width: 0;
+		height: 100%;
+		user-select: none;
+	}
+	.title-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+	.tbtn {
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 24px;
+		padding: 0;
+		background: none;
+		border: 0;
+		border-radius: var(--radius-sm);
+		color: var(--muted);
+		cursor: pointer;
+		transition: background .12s ease, color .12s ease;
+	}
+	.tbtn:hover { background: var(--surface-3); color: var(--text); }
+	.tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+	.tbtn.close:hover { background: #b3261e; color: #fff; }
+	.tbtn svg { display: block; }
 
-	button, .btn { background: #2b3644; color: #e6e9ef; border: 1px solid #3b4a5e; border-radius: 3px; padding: 5px 10px; font-family: inherit; font-size: 13px; cursor: pointer; }
-	button:hover, .btn:hover { background: #37475a; }
-	button.sent { border-color: #7cc4ff; color: #7cc4ff; }
-	button.active, .opt.active { background: #1f6feb; border-color: #4a9eff; color: #fff; }
-	button.danger { background: #6b2430; border-color: #94404e; }
-	button.danger:hover { background: #872e3c; }
-	button.wide { width: 100%; text-align: left; }
+	/* ---- chrome ---------------------------------------------------------- */
+	/* The panel is resizable: keep one readable column and centre it when the
+	   window is wider than that, instead of stretching text across the screen. */
+	:root { --column: 860px; }
+	.top {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		background: var(--chrome);
+		border-bottom: 1px solid var(--line);
+	}
+	.brand {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: .14em;
+		text-transform: uppercase;
+		color: #7cc4ff;
+	}
+	.info {
+		flex: 1;
+		min-width: 0;
+		color: var(--muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.info b { color: var(--text); font-weight: 600; }
+	.searchbar {
+		display: flex;
+		gap: 8px;
+		max-width: var(--column);
+		margin-inline: auto;
+		width: 100%;
+		padding: 0 12px 9px;
+	}
+	#search { flex: 1; }
+	#search {
+		width: 100%;
+		background: var(--surface-2);
+		color: var(--text);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm);
+		padding: 7px 10px;
+		font: inherit;
+	}
+	#search::placeholder { color: var(--dim); }
+	#search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-	.chain { margin-top: 4px; padding-left: 2px; }
-	.chainrow { display: inline-block; vertical-align: middle; margin: 2px 10px 2px 0; color: #9aa7b8; font-size: 12px; cursor: pointer; }
-	.chainrow:hover { color: #c8d4e4; }
-	.chainrow input { vertical-align: middle; margin-right: 4px; }
+	.status {
+		position: sticky;
+		bottom: 0;
+		z-index: 20;
+		padding: 7px 12px;
+		background: var(--chrome);
+		border-top: 1px solid var(--line);
+		color: var(--ok);
+		font-size: 12px;
+	}
+	.status-inner { display: flex; align-items: center; gap: 8px; max-width: var(--column); margin-inline: auto; }
+	.status .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+	.status.err { color: #ff8f8f; }
 
-	/* Auto action: checkbox + tiny seconds box, under the button. */
-	.autorow { display: block; margin-top: 5px; color: #9aa7b8; font-size: 12px; cursor: pointer; }
-	.autorow:hover { color: #c8d4e4; }
-	.autorow input[type=checkbox] { vertical-align: middle; margin-right: 4px; }
-	.autorow span { vertical-align: middle; }
-	input.tiny { width: 34px; margin: 0 3px; padding: 2px 3px; text-align: center; vertical-align: middle; }
+	/* ---- sections -------------------------------------------------------- */
+	main { max-width: var(--column); margin-inline: auto; width: 100%; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+	.sec > h2 {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 8px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: .12em;
+		text-transform: uppercase;
+		color: var(--dim);
+	}
+	.sec > h2::before {
+		content: "";
+		width: 3px;
+		height: 12px;
+		border-radius: 2px;
+		background: var(--accent);
+	}
+	.sec-items { display: flex; flex-direction: column; gap: var(--gap); }
+	.sec.dense .sec-items { gap: 6px; }
 
-	/* Questing: collapsible lines are headers with NO buttons (only their member
-	   quests have buttons). Floats, not flex - Awesomium has no flexbox. */
-	.qline { padding: 5px 8px; cursor: pointer; background: #171d26; border-bottom: 1px solid #222b36; font-weight: 600; overflow: hidden; }
-	.qline:hover { background: #243040; }
-	.qarrow { display: inline-block; width: 12px; color: #4a9eff; font-weight: 400; }
-	.qcount { float: right; color: #6f7f95; font-weight: 400; font-size: 11px; }
-	.qrow { padding: 4px 8px 4px 24px; border-bottom: 1px solid #1c232d; overflow: hidden; }
-	.qrow:hover { background: #1e242e; }
-	.qname { vertical-align: middle; }
-	.qid { color: #6f7f95; font-size: 11px; margin-left: 6px; vertical-align: middle; }
-	.qbtns { float: right; }
-	.qbtns button { margin-left: 4px; padding: 3px 7px; font-size: 11px; }
-	.qnote { padding: 4px 8px 4px 24px; color: #6f7f95; font-size: 11px; }
+	.item {
+		display: flex;
+		flex-direction: column;
+		gap: var(--gap);
+		background: var(--surface);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--radius);
+		padding: 11px 12px;
+	}
+	.sec.dense .item { padding: 8px 10px; }
+	.item.group { background: none; border: 0; padding: 0; }
+	.group-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		gap: var(--gap);
+		align-items: start;   /* a tall card must not stretch its neighbour */
+	}
+	.group-grid.stack { grid-template-columns: 1fr; }   /* one column of cards */
+	.item-head { display: flex; align-items: baseline; gap: 8px; }
+	.item-head .label { font-weight: 600; }
+	.item-head .hint { margin-left: auto; color: var(--dim); font-size: 11px; text-align: right; }
 
-	/* font-family/font-size are set explicitly rather than via `font: inherit`:
-	   the `font` shorthand is lower specificity here and lets a parent's
-	   font-size leak in, which is what squashed the inputs. */
-	input[type=text] { background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 5px 7px; font-family: inherit; font-size: 13px; }
-	input[type=text]:focus { outline: none; border-color: #4a7fbf; }
-	input.num { width: 62px; }
-	select { background: #1e2632; color: #e6e9ef; border: 1px solid #303c4e; border-radius: 3px; padding: 5px 7px; font-family: inherit; font-size: 13px; max-width: 260px; }
+	.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 
-	.list { max-height: 168px; overflow-y: auto; border: 1px solid #27313f; border-radius: 3px; margin-top: 6px; }
-	.sec.dense .list { max-height: 110px; }
-	.list .opt { padding: 5px 8px; cursor: pointer; border-bottom: 1px solid #222b36; overflow: hidden; }
-	.list .opt:hover { background: #243040; }
-	.list .opt:last-child { border-bottom: none; }
-	.list .opt .id { color: #6f7f95; font-size: 11px; float: right; padding-left: 8px; }
-	.list .empty { padding: 8px; color: #6f7f95; }
+	/* ---- buttons --------------------------------------------------------- */
+	.btn {
+		appearance: none;
+		background: var(--surface-3);
+		color: var(--text);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm);
+		padding: 5px 11px;
+		font: inherit;
+		font-weight: 500;
+		cursor: pointer;
+		user-select: none;
+		white-space: nowrap;
+		transition: background .12s ease, border-color .12s ease, color .12s ease, transform .06s ease;
+	}
+	.btn:hover { background: #2b3543; border-color: #3b4859; }
+	.btn:active { transform: translateY(1px); }
+	.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+	.btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+	.btn.danger { background: var(--danger-soft); border-color: #6b2b34; color: var(--danger-ink); }
+	.btn.danger:hover { background: rgba(239, 95, 107, .24); }
+	.btn.wide { width: 100%; text-align: left; }
+	@keyframes sent-flash {
+		from { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+		to { border-color: var(--line); box-shadow: none; }
+	}
+	.btn.sent { animation: sent-flash .9s ease; }
 
-	/* Item search results as a real two-column table: checkbox + name in the
-	   left cell, id in a narrow right column. A table guarantees one row per
-	   line (no inline <label> packing 2-3 to a line) and stops the id from
-	   drifting to the far right edge. Plain CSS2 tables - well supported. */
+	/* A value option is a plain button that picks an argument - not a state
+	   switch, so it stays flat and small. */
+	.btn.value { padding: 4px 10px; font-size: 12px; background: var(--surface-2); }
+	.btn.value:hover { background: var(--surface-3); }
+
+	/* A toggle is a state switch: one connected control, centred in the card. */
+	.seg {
+		align-self: center;
+		display: inline-flex;
+		gap: 2px;
+		padding: 2px;
+		background: var(--surface-2);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm);
+	}
+	.seg .btn { background: none; border-color: transparent; border-radius: 5px; padding: 3px 13px; color: var(--muted); }
+	.seg .btn:hover { background: var(--surface-3); color: var(--text); }
+	.seg .btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+
+	/* ---- inputs ---------------------------------------------------------- */
+	input[type=text] {
+		background: var(--surface-2);
+		color: var(--text);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-sm);
+		padding: 5px 9px;
+		font: inherit;
+		min-width: 0;
+	}
+	input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+	input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; flex: none; }
+	input.tiny { width: 54px; text-align: center; }
+	input.grow { flex: 1 1 120px; }
+	input.num { width: 72px; }
+
+	/* ---- lists ----------------------------------------------------------- */
+	.list {
+		max-height: 190px;
+		overflow-y: auto;
+		background: var(--surface-2);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--radius-sm);
+	}
+	.sec.dense .list { max-height: 130px; }
+	/* Rows are real buttons: reachable with Tab, activated with Enter/Space. */
+	.list .opt {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		padding: 6px 10px;
+		background: none;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.list .opt:last-child { border-bottom: 0; }
+	.list .opt:hover { background: var(--surface-3); }
+	.list .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+	.list .opt.active { background: var(--accent-soft); }
+	.list .opt .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.list .opt .id { flex: none; color: var(--dim); font-size: 11px; white-space: nowrap; }
+	.list .empty { padding: 10px; color: var(--dim); }
+
+	/* ---- item search results --------------------------------------------- */
 	.list table.picks { width: 100%; border-collapse: collapse; }
 	.list table.picks tr.pick { cursor: pointer; }
-	.list table.picks tr.pick:hover { background: #243040; }
-	.list table.picks tr.pick.active { background: #1f6feb; }
-	.list table.picks td.nm { padding: 4px 6px; border-bottom: 1px solid #222b36; vertical-align: middle; }
-	.list table.picks td.nm input[type=checkbox] { vertical-align: middle; margin: 0 6px 0 1px; }
-	/* width:1% + nowrap shrinks the id column to its content, right-aligned. */
-	.list table.picks td.id { padding: 4px 6px; border-bottom: 1px solid #222b36; width: 1%; white-space: nowrap; text-align: right; color: #6f7f95; font-size: 11px; }
-	.list table.picks tr.pick.active td.id { color: #fff; }
+	.list table.picks tr.pick:hover { background: var(--surface-3); }
+	.list table.picks tr.pick.active { background: var(--accent-soft); }
+	.list table.picks td.nm { padding: 5px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+	.list table.picks td.nm input[type=checkbox] { margin: 0 8px 0 0; vertical-align: middle; }
+	.list table.picks td.id { padding: 5px 8px; border-bottom: 1px solid var(--line-soft); width: 1%; white-space: nowrap; text-align: right; color: var(--dim); font-size: 11px; }
+	.list table.picks tr.pick.active td.id { color: var(--accent-ink); }
 
-	.preview { margin-top: 6px; background: #10151d; border: 1px dashed #34404f; border-radius: 3px; padding: 6px; font-family: Consolas, monospace; font-size: 11px; color: #cfe3ff; word-break: break-all; }
-	.sec.dense .preview { padding: 4px; }
-	.names { margin-top: 4px; color: #9aa7b8; font-size: 11px; }
-	.chips { margin-top: 6px; min-height: 22px; }
-	.chip { display: inline-block; vertical-align: top; background: #2b3644; border: 1px solid #3b4a5e; border-radius: 10px; padding: 2px 8px; margin: 0 4px 4px 0; font-size: 11px; }
-	.chip-x { color: #ff8f8f; cursor: pointer; font-weight: 700; margin-left: 5px; }
-	.chip-x:hover { color: #fff; }
-	.sec.dense .chips { min-height: 18px; margin-top: 4px; }
+	/* ---- chips ----------------------------------------------------------- */
+	.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 22px; }
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: var(--surface-3);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		padding: 2px 10px;
+		font-size: 11px;
+	}
+	.chip .x {
+		background: none;
+		border: 0;
+		padding: 0;
+		color: var(--danger);
+		font: inherit;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+	}
+	.chip .x:hover { color: #fff; }
+	.chip .x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+	/* ---- chains and auto actions ----------------------------------------- */
+	.chain { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+	.chain-item { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; cursor: pointer; }
+	.chain-item:hover { color: var(--text); }
+	.autorow { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
+	.autorow:hover { color: var(--text); }
+	.dim { color: var(--dim); }
+
+	/* Star: adds the item to the mini strip. */
+	.fav {
+		flex: none;
+		width: 22px;
+		height: 22px;
+		margin: -3px -4px -3px 2px;
+		padding: 0;
+		background: none;
+		border: 0;
+		border-radius: var(--radius-sm);
+		color: #4a5a6e;
+		font-size: 14px;
+		line-height: 1;
+		cursor: pointer;
+		transition: color .12s ease, background .12s ease;
+	}
+	.fav:hover { background: var(--surface-3); color: var(--accent); }
+	.fav.on { color: #ffc453; }
+	.fav:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+	/* ---- quests ---------------------------------------------------------- */
+	.qline {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		padding: 7px 10px;
+		background: var(--surface-2);
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		color: inherit;
+		font: inherit;
+		font-weight: 600;
+		text-align: left;
+		cursor: pointer;
+	}
+	.qline:hover { background: var(--surface-3); }
+	.qline:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+	.qline .chev { color: var(--accent); transition: transform .15s ease; }
+	.qline.open .chev { transform: rotate(90deg); }
+	.qline .count { margin-left: auto; color: var(--dim); font-weight: 400; font-size: 11px; }
+	.qrow { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 26px; border-bottom: 1px solid var(--line-soft); }
+	.qrow:hover { background: var(--surface-2); }
+	.qrow .qname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.qrow .qid { flex: none; color: var(--dim); font-size: 11px; }
+	.qrow .qbtns { flex: none; display: flex; gap: 4px; }
+	.qrow .qbtns .btn { padding: 3px 8px; font-size: 11px; }
+	.qnote { padding: 4px 10px 4px 26px; color: var(--dim); font-size: 11px; }
+
+	/* ---- mini mode -------------------------------------------------------- */
+	#mini { display: none; }
+	body.mini-mode main, body.mini-mode .searchbar { display: none; }
+	body.mini-mode #mini {
+		display: block;
+		padding: 9px 12px 11px;
+	}
+	.mini-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+	.mini-blocks { display: flex; flex-direction: column; }
+	.mini-blocks:empty { display: none; }
+	.mini-widget { display: flex; flex-direction: column; gap: 6px; padding-top: 9px; margin-top: 9px; border-top: 1px solid var(--line-soft); }
+	.mini-blocks > .mini-widget:first-child { padding-top: 0; margin-top: 9px; }
+	.mini-head { display: flex; align-items: center; gap: 8px; }
+	.mini-head .mini-label { min-width: 62px; color: var(--dim); font-size: 11px; }
+	.mini-list {
+		display: flex;
+		flex-direction: column;
+		max-height: 78px;          /* two or three rows, then scroll */
+		overflow-y: auto;
+		background: var(--surface-2);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--radius-sm);
+	}
+	.mini-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		padding: 4px 9px;
+		background: none;
+		border: 0;
+		border-bottom: 1px solid var(--line-soft);
+		color: inherit;
+		font: inherit;
+		font-size: 12px;
+		text-align: left;
+		cursor: pointer;
+	}
+	.mini-row:last-child { border-bottom: 0; }
+	.mini-row:hover { background: var(--surface-3); }
+	.mini-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+	.mini-row.on { background: var(--accent-soft); }
+	.mini-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.mini-row .id { flex: none; color: var(--dim); font-size: 11px; }
+	.mini-act { padding: 1px 7px; font-size: 10px; }
+	.mini-empty { padding: 5px 9px; color: var(--dim); font-size: 11px; }
+	.mini-qty { width: 48px; }
+	.mini-label { color: var(--dim); font-size: 11px; }
+	.logbox { display: flex; flex-direction: column; gap: 6px; }
+	.mini-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 4px 12px 4px 10px;
+		background: var(--surface-2);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		color: var(--muted);
+		font: inherit;
+		font-size: 12px;
+		cursor: pointer;
+		transition: background .12s ease, border-color .12s ease, color .12s ease;
+	}
+	.mini-toggle:hover { background: var(--surface-3); color: var(--text); }
+	.mini-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+	.mini-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: #46536a; }
+	.mini-toggle.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+	.mini-toggle.on .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+	.mini-opts { display: inline-flex; gap: 4px; }
+	.mini-chip { padding: 3px 9px; }
+
+	.preview {
+		background: #0d1219;
+		border: 1px dashed var(--line);
+		border-radius: var(--radius-sm);
+		padding: 7px 9px;
+		font-family: ui-monospace, Consolas, monospace;
+		font-size: 11px;
+		color: #cfe3ff;
+		word-break: break-all;
+	}
+	.names { color: var(--muted); font-size: 11px; }
 </style>
 </head>
 <body>
-<div id="topbar">
-	<div class="row">
-		<span class="brand">QA</span>
-		<span id="info">loading...</span>
-		<button id="btn-reset" class="danger" title="speed 1, nodie off, nocool off, mpfull off">Reset all cheats</button>
+<div class="top">
+	<div class="titlebar">
+		<div class="title-drag" data-tauri-drag-region="deep">
+			<span class="brand">QA</span>
+			<span id="info" class="info">loading...</span>
+		</div>
+		<div class="title-actions">
+			<button id="btn-mini" class="tbtn" type="button" title="Mini mode" aria-label="Mini mode">
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+					<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h6"/>
+				</svg>
+			</button>
+			<button id="btn-close" class="tbtn close" type="button" title="Close" aria-label="Close">
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+					<path d="M4 4l8 8M12 4l-8 8"/>
+				</svg>
+			</button>
+		</div>
+	</div>
+	<div class="searchbar">
+		<input id="search" type="text" placeholder="Search commands (speed, dungeon, crest...)" autocomplete="off" spellcheck="false">
+		<button id="btn-reset" class="btn danger" type="button" title="speed 1, nodie off, nocool off, mpfull off, auto revive off">Reset</button>
 	</div>
 </div>
-<div id="searchrow"><input id="search" type="text" placeholder="Search commands (speed, dungeon, crest...)" oninput="applyFilter()"></div>
-<div id="sections"></div>
-<div id="status"></div>
+<main id="sections"></main>
+<div id="mini" class="mini"></div>
+<div id="status" class="status" role="status" aria-live="polite">
+	<span class="status-inner"><span class="dot"></span><span id="status-text">ready</span></span>
+</div>
 
 <script>
-var CFG = { sections: [], actions: [] };
-var DUNGEONS = { dungeons: [] };
-var GEARSETS = { filters: [], sets: [], slotNames: [] };
-var ZONES = [];
-var zonesLoaded = false;
-var zonesError = null;
-var STATE = {};
-var qaState = {};          // normalized command -> args we last sent (for button state)
-var selectedItems = [];
-var dungeonNameById = {};
-var zoneNameById = {};
-var autoControls = [];      // rendered auto-action controls, synced from /state
-var QUEST_INDEX = { lines: [], loose: [], counts: {} };
-var questError = null;      // why the quest index is empty, shown in the panel
+'use strict';
 
-function proxy() { return window._tera_client_proxy_ || window.__tera_client_proxy__; }
-
-window.addEventListener('error', function(e) {
-	// The proxy's alert is best-effort: show it in the status line either way.
-	try {
-		var p = proxy();
-		if (p && p.alert) p.alert('QA menu error: ' + e.message);
-	} catch (err) { }
-	status('QA menu error: ' + e.message, true);
-});
-
-window.onload = function() {
-	var p = proxy();
-	if (p) {
-		try { p.resize_to(540, 660); } catch (e) {}
-		try { p.set_title('QA Menu'); } catch (e) {}
-	}
-// Focus the search box immediately so typing works without a click.
-	document.getElementById('search').focus();
-	// "/" jumps to search from anywhere in the menu (unless already typing).
-	document.addEventListener('keydown', function(e) {
-		var tag = (e.target && e.target.tagName) || '';
-		if (e.keyCode === 191 && tag !== 'INPUT' && tag !== 'TEXTAREA') {
-			e.preventDefault();
-			document.getElementById('search').focus();
-			document.getElementById('search').select();
-		}
-	});
-	loadAll();
-	pollState();
-	setInterval(pollState, 3000);
+// ---------- state ----------
+const S = {
+	cfg: { sections: [], actions: [] },
+	dungeons: { dungeons: [] },
+	gearsets: { filters: [], sets: [], slotNames: [] },
+	zones: [],
+	zonesLoaded: false,
+	zonesError: null,
+	game: {},
+	qa: {},            // last sent command -> args, for button state
+	mini: false,       // mini mode: a strip of condensed favourites
+	selectedItems: [],
+	itemLog: { items: [], options: {}, selected: null },   // the item id logger
+	favourites: [],   // items pinned to the mini strip
+	dungeonNameById: {},
+	zoneNameById: {},
+	autoControls: [],  // rendered auto-action controls, synced from /state
+	quests: { lines: [], loose: [], counts: {} },
+	questError: null,
 };
 
-// ---------- helpers ----------
-function esc(s) {
-	return String(s).replace(/[&<>"']/g, function(c) {
-		return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-	});
-}
-function getJSON(url, cb) {
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', url, true);
-	xhr.onreadystatechange = function() {
-		if (xhr.readyState != 4) return;
-		if (xhr.status == 200) {
-			try { cb(JSON.parse(xhr.responseText), null); }
-			catch (e) { cb(null, e.message); }
-		} else cb(null, 'HTTP ' + xhr.status);
-	};
-	xhr.send();
-}
-function status(msg, isErr) {
-	var el = document.getElementById('status');
-	el.innerHTML = esc(msg);
-	el.className = isErr ? 'err' : '';
+// ---------- dom helpers ----------
+const $ = (sel, root = document) => root.querySelector(sel);
+
+function el(tag, props = {}, ...children) {
+	const node = document.createElement(tag);
+	for (const [k, v] of Object.entries(props)) {
+		if (v === undefined || v === null) continue;
+		if (k === 'class') node.className = v;
+		else if (k === 'text') node.textContent = v;
+		else if (k.startsWith('on')) node.addEventListener(k.slice(2).toLowerCase(), v);
+		else node.setAttribute(k, v);
+	}
+	for (const child of children.flat()) {
+		if (child === undefined || child === null || child === false) continue;
+		node.append(child.nodeType ? child : document.createTextNode(String(child)));
+	}
+	return node;
 }
 
-// Awesomium does not reliably fire keyup/input on text inputs, so bind every
-// event that could indicate a change. All of them funnel into the same handler.
-function bindInput(el, handler) {
-	['input', 'keyup', 'keydown', 'change', 'blur', 'paste', 'cut', 'propertychange'].forEach(function (ev) {
-		el['on' + ev] = handler;
-	});
-	return el;
+function status(msg, isErr = false) {
+	const bar = $('#status');
+	$('#status-text').textContent = msg;
+	bar.classList.toggle('err', !!isErr);
 }
 
-// Some Awesomium builds never deliver keyup/input to a text box at all. Polling
-// the value is the only guaranteed way to notice a change, so filters get both.
-function watchValue(el, onChange, every) {
-	var last = el.value;
-	return setInterval(function () {
-		if (el.value !== last) {
-			last = el.value;
-			onChange();
+const getJSON = async url => {
+	const res = await fetch(url, { headers: { Accept: 'application/json' } });
+	if (!res.ok) throw new Error('HTTP ' + res.status);
+	return res.json();
+};
+
+const stripPrefix = cmd => String(cmd == null ? '' : cmd).replace(/^\/@?/, '');
+
+window.addEventListener('error', e => status('QA menu error: ' + e.message, true));
+window.addEventListener('unhandledrejection', e => status('QA menu error: ' + (e.reason && e.reason.message || e.reason), true));
+
+// ---------- overlay window ----------
+// The page is served by the mod, but it runs inside the Tauri overlay, which
+// hands it window control over IPC. In a plain browser there is no overlay,
+// so the window buttons quietly do nothing.
+const tauriApi = () => (window.__TAURI__ && window.__TAURI__.core) ? window.__TAURI__ : null;
+
+// Mini mode: a strip of condensed favourites, the window shrunk to fit.
+const DEFAULT_SIZE = { width: 560, height: 680 };
+let fullSize = null;   // the size to go back to when mini mode ends
+
+async function resizeWindow(mini, height) {
+	const api = tauriApi();
+	if (!api) return;
+	const win = api.window.getCurrentWindow();
+	try {
+		if (mini) {
+			if (!fullSize) fullSize = await win.innerSize();
+			const scale = await win.scaleFactor();
+			await win.setMinSize(new api.window.LogicalSize(320, height));
+			await win.setSize(new api.window.LogicalSize(fullSize.width / scale, height));
+		} else {
+			// Back to the size the window had before mini mode (or the
+			// default), never the strip height.
+			const size = fullSize || DEFAULT_SIZE;
+			await win.setMinSize(new api.window.LogicalSize(420, 480));
+			await win.setSize(new api.window.PhysicalSize(size.width, size.height));
+			fullSize = null;
 		}
-	}, every || 200);
+	} catch (e) {
+		status('Window: ' + e, true);
+	}
+}
+
+function measureMini() {
+	return document.querySelector('.titlebar').offsetHeight
+		+ document.getElementById('mini').offsetHeight
+		+ document.getElementById('status').offsetHeight + 4;
+}
+
+function setMini(on) {
+	S.mini = !!on;
+	document.body.classList.toggle('mini-mode', S.mini);
+	renderMini();
+	paintState();
+
+	const miniBtn = document.getElementById('btn-mini');
+	miniBtn.title = S.mini ? 'Full mode' : 'Mini mode';
+	miniBtn.setAttribute('aria-label', miniBtn.title);
+
+	resizeWindow(S.mini, measureMini());
+}
+
+// The strip can grow (a block added, a list with results), so the window is
+// re-measured whenever the strip changes.
+function applyMiniSize() {
+	if (!S.mini) return;
+	resizeWindow(true, measureMini());
+}
+
+// The mini strip shows the items listed under "mini" in commands.json,
+// condensed. One-liners (toggle, options, cmd, input) sit in a row; the
+// menu-like ones (dungeons, items, quests, teleport, gearsets) get their own
+// compact block, because a menu needs a list, not a button.
+function findItem(label) {
+	const walk = item => {
+		if ((item.label || '') === label) return item;
+		for (const child of item.items || []) {
+			const hit = walk(child);
+			if (hit) return hit;
+		}
+		return null;
+	};
+	for (const sec of S.cfg.sections || []) {
+		for (const item of sec.items || []) {
+			const hit = walk(item);
+			if (hit) return hit;
+		}
+	}
+	return null;
+}
+
+const MINI_ROWS = 8;   // how many matches a mini list holds (it scrolls)
+
+// Every word of the query has to appear, so "armory priest" finds
+// "Sabex Armory - Heal Priest".
+function matchesWords(haystack, query) {
+	const words = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+	if (!words.length) return true;
+	const text = String(haystack || '').toLowerCase();
+	return words.every(w => text.indexOf(w) !== -1);
+}
+
+function renderMini() {
+	const host = document.getElementById('mini');
+	host.textContent = '';
+
+	const inline = el('div', { class: 'mini-inline' });
+	const blocks = el('div', { class: 'mini-blocks' });
+
+	for (const label of S.favourites || []) {
+		const item = findItem(label);
+		if (!item) continue;
+		const node = renderMiniItem(item);
+		if (!node) continue;
+		(node.dataset.block ? blocks : inline).append(node);
+	}
+	host.append(inline, blocks);
+}
+
+function renderMiniItem(item) {
+	switch (item.type) {
+		case 'toggle': return miniToggle(item);
+		case 'options': return miniOptions(item);
+		case 'cmd': return miniCmd(item);
+		case 'input': return miniInput(item);
+		case 'dungeons': return miniDungeons(item);
+		case 'items': return miniItems(item);
+		case 'quests': return miniQuests(item);
+		case 'teleport': return miniTeleport(item);
+		case 'gearsets': return miniGearsets(item);
+		case 'itemlog': return renderItemLog(null, item);
+	}
+	return null;   // nothing to fire - better than an empty command
+}
+
+// A toggle: one button that flips the state, instead of an on/off pair.
+function miniToggle(item) {
+	const cmd = stripPrefix(item.cmd);
+	const b = el('button', { class: 'mini-toggle', type: 'button', 'data-cmd': cmd },
+		el('span', { class: 'dot' }),
+		el('span', { text: item.label })
+	);
+	b.onclick = () => {
+		const on = S.qa[cmd] === 'on';
+		send(cmd + (on ? ' off' : ' on'), b);
+	};
+	return b;
+}
+
+// A value list: the same chips, just smaller.
+function miniOptions(item) {
+	const cmd = stripPrefix(item.cmd);
+	const row = el('div', { class: 'mini-opts' });
+	for (const opt of item.options || []) {
+		const b = el('button', { class: 'btn value mini-chip', type: 'button', 'data-cmd': cmd, 'data-args': opt.args, text: opt.label });
+		b.onclick = () => send(cmd + ' ' + opt.args, b);
+		row.append(b);
+	}
+	return el('div', { class: 'controls' }, el('span', { class: 'mini-label', text: item.label }), row);
+}
+
+// A command: one button, and the chain stays optional next to it.
+function miniCmd(item) {
+	const wrap = el('div', { class: 'controls' });
+	const b = el('button', { class: 'btn', type: 'button', text: item.label });
+	b.onclick = async () => {
+		await send(stripPrefix(item.cmd), b);
+		for (const c of item.chain || []) {
+			if (c._checked) await send(stripPrefix(c.cmd), b);
+		}
+	};
+	wrap.append(b);
+	for (const c of item.chain || []) {
+		const cb = el('input', { type: 'checkbox', 'aria-label': c.label });
+		cb.checked = c.defaultOn !== false;
+		c._checked = cb.checked;
+		cb.onchange = () => { c._checked = cb.checked; };
+		wrap.append(el('label', { class: 'chain-item' }, cb, el('span', { text: c.label })));
+	}
+	return wrap;
+}
+
+// A free-text command: a small field and Send.
+function miniInput(item) {
+	const inp = el('input', { type: 'text', class: 'grow', 'aria-label': item.placeholder || item.label, placeholder: item.placeholder || item.label });
+	const b = el('button', { class: 'btn', type: 'button', text: 'Send' });
+	const go = () => {
+		const v = inp.value.trim();
+		if (!v && !item.allowEmpty) return;
+		send(item.cmd + (v ? ' ' + v : ''), b);
+		inp.value = '';
+	};
+	inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+	b.onclick = go;
+	return el('div', { class: 'controls' }, inp, b);
+}
+
+// ---------- the menu-like blocks ----------
+
+// A block: a title, a filter field and a short list.
+function miniBlock(title, placeholder, onSearch) {
+	const wrap = el('div', { class: 'mini-widget' });
+	wrap.dataset.block = '1';
+	const search = el('input', { type: 'text', class: 'grow', 'aria-label': placeholder, placeholder });
+	const list = el('div', { class: 'mini-list' });
+	wrap.append(el('div', { class: 'mini-head' }, el('span', { class: 'mini-label', text: title }), search), list);
+	search.oninput = () => { onSearch(search.value.trim(), list); applyMiniSize(); };
+	return { wrap, list, search };
+}
+
+// Dungeons: type a name, click the match, it enters that dungeon.
+function miniDungeons(item) {
+	const { wrap, list, search } = miniBlock(item.label || 'Dungeons', 'dungeon name...', (term, host) => {
+		host.textContent = '';
+		let shown = 0;
+		for (const d of S.dungeons.dungeons || []) {
+			if (!matchesWords(d.name, term)) continue;
+			if (++shown > MINI_ROWS) break;
+			const row = el('button', { class: 'mini-row', type: 'button' },
+				el('span', { class: 'name', text: d.name }),
+				el('span', { class: 'id', text: 'contId ' + d.contId })
+			);
+			row.onclick = () => send('enter_dungeon ' + d.contId + ' 0', row);
+			host.append(row);
+		}
+		if (!shown) host.append(el('div', { class: 'mini-empty', text: 'No match' }));
+	});
+	search.oninput();
+	return wrap;
+}
+
+// Items: type a name, click to pick, then Give.
+function miniItems(item) {
+	const { wrap, list, search } = miniBlock(item.label || 'Item search', 'item name...', () => {});
+	const qty = el('input', { type: 'text', class: 'mini-qty', 'aria-label': 'Quantity', value: '1' });
+	const give = el('button', { class: 'btn', type: 'button', text: 'Give' });
+	give.onclick = () => {
+		if (!S.selectedItems.length) return status('No items selected', true);
+		send('makeitems ' + S.selectedItems.join(' ') + ' ' + (qty.value || '1'), give);
+	};
+	const clear = el('button', { class: 'btn', type: 'button', text: 'Clear' });
+	clear.onclick = () => {
+		// Drops every picked item, in the list and in the shared selection.
+		S.selectedItems = [];
+		paint();
+	};
+	wrap.append(el('div', { class: 'mini-head' }, el('span', { class: 'mini-label', text: 'Give' }), qty, give, clear));
+
+	let results = [];
+	const paint = () => {
+		list.textContent = '';
+		for (const it of results.slice(0, MINI_ROWS)) {
+			const on = S.selectedItems.indexOf(it.id) !== -1;
+			const row = el('button', { class: 'mini-row' + (on ? ' on' : ''), type: 'button' },
+				el('span', { class: 'name', text: it.name }),
+				el('span', { class: 'id', text: String(it.id) })
+			);
+			row.onclick = () => {
+				const at = S.selectedItems.indexOf(it.id);
+				if (at === -1) S.selectedItems.push(it.id);
+				else S.selectedItems.splice(at, 1);
+				paint();
+			};
+			list.append(row);
+		}
+		if (!results.length) list.append(el('div', { class: 'mini-empty', text: 'Type at least 2 letters' }));
+	};
+	let timer = null;
+	search.oninput = () => {
+		const term = search.value.trim();
+		clearTimeout(timer);
+		if (term.length < 2) { results = []; paint(); return; }
+		timer = setTimeout(async () => {
+			try {
+				results = await getJSON('/items?q=' + encodeURIComponent(term)) || [];
+			} catch (e) { results = []; }
+			paint();
+			applyMiniSize();
+		}, 250);
+	};
+	paint();
+	return wrap;
+}
+
+// Quests: type a name, then Start or Next step on the quest.
+function miniQuests(item) {
+	const { wrap, list, search } = miniBlock(item.label || 'Questing', 'quest name...', (term, host) => {
+		host.textContent = '';
+		if (!term) {
+			host.append(el('div', { class: 'mini-empty', text: S.questError ? 'Quest data unavailable' : 'Type a quest name' }));
+			return;
+		}
+		const hits = [];
+		for (const line of S.quests.lines || []) {
+			for (const qst of line.quests) {
+				if (matchesWords(qst.name, term)) hits.push(qst);
+				if (hits.length > 200) break;
+			}
+		}
+		for (const qst of S.quests.loose || []) {
+			if (matchesWords(qst.name, term)) hits.push(qst);
+		}
+		if (!hits.length) {
+			host.append(el('div', { class: 'mini-empty', text: 'No quest matches' }));
+			return;
+		}
+		for (const qst of hits.slice(0, MINI_ROWS)) {
+			const start = el('button', { class: 'btn mini-act', type: 'button', text: 'S', title: 'Start quest ' + qst.id });
+			start.onclick = () => send('start_quest ' + qst.id, start);
+			const next = el('button', { class: 'btn mini-act', type: 'button', text: 'N', title: 'Next step ' + qst.id });
+			next.onclick = () => send('next_task ' + qst.id, next);
+			host.append(el('div', { class: 'mini-row' },
+				el('span', { class: 'name', text: qst.name }),
+				el('span', { class: 'id', text: String(qst.id) }),
+				start, next
+			));
+		}
+	});
+	search.oninput();
+	return wrap;
+}
+
+// Teleport: type a zone, click it, it teleports there.
+function miniTeleport(item) {
+	const { wrap, list, search } = miniBlock(item.label || 'Teleport', 'zone name or id...', (term, host) => {
+		host.textContent = '';
+		let shown = 0;
+		for (const z of S.zones) {
+			const nm = zoneName(z);
+			if (!matchesWords(nm, term) && String(z.id).indexOf(term) === -1) continue;
+			if (++shown > MINI_ROWS) break;
+			const row = el('button', { class: 'mini-row', type: 'button' },
+				el('span', { class: 'name', text: nm || ('zone ' + z.id) }),
+				el('span', { class: 'id', text: String(z.id) })
+			);
+			row.onclick = () => send('teleport ' + z.id + ' 0 0 0', row);
+			host.append(row);
+		}
+		if (!shown) host.append(el('div', { class: 'mini-empty', text: S.zonesLoaded ? 'No match' : 'Loading zones...' }));
+	});
+	search.oninput();
+	return wrap;
+}
+
+// Gear sets: click a set to wear it.
+function miniGearsets(item) {
+	const { wrap, list, search } = miniBlock(item.label || 'Gear sets', 'gear set name...', (term, host) => {
+		host.textContent = '';
+		let shown = 0;
+		for (const s of S.gearsets.sets || []) {
+			// Word-wise: "armory priest" finds "Sabex Armory - Heal Priest".
+			if (!matchesWords(s.name, term)) continue;
+			if (++shown > MINI_ROWS) break;
+			const row = el('button', { class: 'mini-row', type: 'button' },
+				el('span', { class: 'name', text: s.name }),
+				el('span', { class: 'id', text: s.items.length + ' items' })
+			);
+			row.onclick = () => send('makeitems ' + s.items.join(' ') + ' 1', row);
+			host.append(row);
+		}
+		if (!shown) host.append(el('div', { class: 'mini-empty', text: 'No match' }));
+	});
+	search.oninput();
+	return wrap;
+}
+
+// ---------- sending ----------
+function flash(btn) {
+	if (!btn) return;
+	btn.classList.remove('sent');
+	void btn.offsetWidth;   // restart the animation
+	btn.classList.add('sent');
+	setTimeout(() => btn.classList.remove('sent'), 900);
 }
 
 // Remember what we last sent so toggle/preset buttons can show their state.
 function noteSent(cmdString) {
-	var parts = String(cmdString).split(' ');
-	qaState[parts.shift()] = parts.join(' ');
+	const parts = String(cmdString).split(' ');
+	const name = parts.shift();
+	S.qa[name] = parts.join(' ');
 	paintState();
 }
 
-function send(cmd, btn, cb) {
-	if (btn) { btn.className = (btn.className + ' sent').replace(/\s+/g, ' '); setTimeout(function() { btn.className = btn.className.replace(' sent', ''); }, 900); }
-	getJSON('/run?cmd=' + encodeURIComponent(cmd), function(r, err) {
-		if (!err && r && r.ok) noteSent(r.sent);
-		status(err ? 'Failed: ' + err : (r.ok ? 'Sent: ' + r.sent : 'Error: ' + r.error), !(r && r.ok));
-		if (cb) cb(r, err);
-	});
+async function send(cmd, btn) {
+	if (!String(cmd || '').trim()) return status('Nothing to send', true);
+	flash(btn);
+	try {
+		const r = await getJSON('/run?cmd=' + encodeURIComponent(cmd));
+		if (r.ok) {
+			noteSent(r.sent);
+			status('Sent: ' + r.sent);
+		} else {
+			status('Error: ' + r.error, true);
+		}
+	} catch (e) {
+		status('Failed: ' + e.message, true);
+	}
 }
 
-function doAction(id, btn) {
-	getJSON('/action?id=' + encodeURIComponent(id), function(r, err) {
-		if (!err && r && r.ok) (r.sent || []).forEach(noteSent);
-		status(err ? 'Failed: ' + err : (r.ok ? 'Reset: ' + r.sent.join(', ') : 'Error: ' + r.error), !(r && r.ok));
+async function doAction(id) {
+	try {
+		const r = await getJSON('/action?id=' + encodeURIComponent(id));
+		if (r.ok) {
+			(r.sent || []).forEach(noteSent);
+			status('Reset: ' + r.sent.join(', '));
+		} else {
+			status('Error: ' + r.error, true);
+		}
+		return r;
+	} catch (e) {
+		status('Failed: ' + e.message, true);
+		return null;
+	}
+}
+
+// Copy the auto-action state (auto revive) into the rendered controls.
+function syncAuto(auto) {
+	for (const ac of S.autoControls) {
+		const st = (auto || {})[ac.command];
+		if (!st) continue;
+		ac.cb.checked = !!st.enabled;
+		if (document.activeElement !== ac.num) ac.num.value = String(st.seconds);
+	}
+}
+
+// The star on an item adds it to the mini strip. The list lives on the mod
+// side (favourites.json), so it survives restarts and is shared with the
+// overlay.
+function favButton(label) {
+	const b = el('button', {
+		class: 'fav', type: 'button', 'data-label': label,
+		'aria-label': 'Add ' + label + ' to mini mode',
+		text: '☆'
 	});
+	b.onclick = async () => {
+		try {
+			const r = await getJSON('/favourites/toggle?label=' + encodeURIComponent(label));
+			if (!r.ok) return status('Favourite failed: ' + (r.error || 'unknown'), true);
+			S.favourites = r.items || [];
+			paintState();
+			renderMini();
+			applyMiniSize();
+			status((S.favourites.indexOf(label) !== -1 ? 'Added to mini: ' : 'Removed from mini: ') + label);
+		} catch (e) {
+			status('Favourite failed: ' + e.message, true);
+		}
+	};
+	return b;
 }
 
 // Highlight the button matching what we last sent, per command group.
 function paintState() {
-	var btns = document.getElementsByTagName('button');
-	for (var i = 0; i < btns.length; i++) {
-		var b = btns[i];
-		var cmd = b.getAttribute('data-cmd');
-		if (!cmd) continue;
-		var args = b.getAttribute('data-args');
-		var want = qaState[cmd];
-		if (want !== undefined && want === args) b.className = b.className.replace(/\s*active\s*/g, ' ') + ' active';
-		else b.className = b.className.replace(/\s*active\s*/g, ' ').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
-	}
+	document.querySelectorAll('button[data-cmd]').forEach(b => {
+		const want = S.qa[b.dataset.cmd];
+		b.classList.toggle('active', want !== undefined && want === (b.dataset.args ?? ''));
+	});
+	// The mini toggles show the state instead of an on/off pair.
+	document.querySelectorAll('.mini-toggle[data-cmd]').forEach(b => {
+		const on = S.qa[b.dataset.cmd] === 'on';
+		b.classList.toggle('on', on);
+		b.title = b.dataset.cmd + ': ' + (on ? 'on' : 'off');
+	});
+	// Stars show what is in the mini strip.
+	document.querySelectorAll('.fav').forEach(b => {
+		const on = (S.favourites || []).indexOf(b.dataset.label) !== -1;
+		b.classList.toggle('on', on);
+		b.textContent = on ? '★' : '☆';
+		b.title = on ? 'In mini mode - click to remove' : 'Add to mini mode';
+		b.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') + b.dataset.label + (on ? ' from' : ' to') + ' mini mode');
+	});
 }
 
 // ---------- loading ----------
-function loadAll() {
-	getJSON('/commands', function(cfg, err) {
-		if (err) return status('Could not load commands.json: ' + err, true);
-		CFG = cfg;
-		getJSON('/dungeons', function(d) {
-			DUNGEONS = d || DUNGEONS;
-			(DUNGEONS.dungeons || []).forEach(function(dn) { dungeonNameById[dn.contId] = dn.name; });
-			render();
-		});
-		getJSON('/gearsets', function(g) { GEARSETS = g || GEARSETS; render(); });
-		getJSON('/quests', function(q) {
-			if (q && q.index) QUEST_INDEX = q.index;
-			if (q && q.error) questError = q.error;
-			render();
-		});
-		getJSON('/zones', function(z) {
-			ZONES = ((z && z.zones) || []).sort(function(a, b) {
-				return (zoneName(a) || String(a.id)).localeCompare(zoneName(b) || String(b.id));
-			});
-			zonesError = (z && z.error) ? String(z.error) : null;
-			zonesLoaded = true;
-			ZONES.forEach(function(zn) { if (zn.name) zoneNameById[zn.id] = zn.name; });
-			render();
-		});
-	});
+async function loadAll() {
+	try {
+		S.cfg = await getJSON('/commands');
+	} catch (e) {
+		status('Could not load commands.json: ' + e.message, true);
+		return;
+	}
+
+	const [dungeons, gearsets, quests, zones, favourites] = await Promise.all([
+		getJSON('/dungeons').catch(() => null),
+		getJSON('/gearsets').catch(() => null),
+		getJSON('/quests').catch(() => null),
+		getJSON('/zones').catch(() => null),
+		getJSON('/favourites').catch(() => null),
+	]);
+
+	if (favourites && Array.isArray(favourites.items)) S.favourites = favourites.items;
+
+	if (dungeons) S.dungeons = dungeons;
+	(S.dungeons.dungeons || []).forEach(dn => { S.dungeonNameById[dn.contId] = dn.name; });
+
+	if (gearsets) S.gearsets = gearsets;
+
+	if (quests) {
+		if (quests.index) S.quests = quests.index;
+		S.questError = quests.error || null;
+	}
+
+	if (zones) {
+		S.zones = (zones.zones || []).sort((a, b) =>
+			(zoneName(a) || String(a.id)).localeCompare(zoneName(b) || String(b.id)));
+		S.zonesError = zones.error ? String(zones.error) : null;
+		S.zonesLoaded = true;
+		S.zones.forEach(zn => { if (zn.name) S.zoneNameById[zn.id] = zn.name; });
+	}
+
+	render();
+	renderMini();
 }
 
-function pollState() {
-	getJSON('/state', function(s) {
-		if (!s) return;
-		STATE = s;
-		var el = document.getElementById('info');
-		var zn = s.zone ? (dungeonNameById[s.zone] || zoneNameById[s.zone] || '') : '';
+async function pollItemLog() {
+	if (!paintItemLog) return;   // no logger on the panel
+	try {
+		const r = await getJSON('/items/log');
+		S.itemLog.items = r.items || [];
+		S.itemLog.options = r.options || {};
+		paintItemLog();
+	} catch (e) { /* the mod may be reloading */ }
+}
 
-		// Keep auto-action controls in sync with the mod's state.
-		var auto = s.auto || {};
-		for (var i = 0; i < autoControls.length; i++) {
-			var ac = autoControls[i];
-			var st = auto[ac.command];
-			if (!st) continue;
-			ac.cb.checked = !!st.enabled;
-			if (document.activeElement !== ac.num) ac.num.value = String(st.seconds);
-		}
-		el.innerHTML = s.inGame
-			? '<b>' + esc(s.char || '?') + '</b> lv' + esc(s.level) + ' &nbsp;|&nbsp; zone <b>' + esc(s.zone) + '</b>' + esc(zn) + (s.inDungeon ? ' (dungeon)' : '')
-			: 'not in game';
-	});
+async function pollState() {
+	try {
+		S.game = await getJSON('/state');
+	} catch (e) {
+		return;
+	}
+	const s = S.game;
+	const zone = s.zone ? (S.dungeonNameById[s.zone] || S.zoneNameById[s.zone] || '') : '';
+
+	// Keep auto-action controls in sync with the mod's state.
+	syncAuto(s.auto);
+
+	const info = $('#info');
+	info.textContent = '';
+	if (!s.inGame) {
+		info.textContent = 'not in game';
+		return;
+	}
+	info.append(
+		el('b', { text: s.char || '?' }),
+		' lv' + s.level,
+		' | zone ',
+		el('b', { text: String(s.zone) }),
+		zone,
+		s.inDungeon ? ' (dungeon)' : ''
+	);
 }
 
 // ---------- rendering ----------
 function render() {
-	var host = document.getElementById('sections');
-	host.innerHTML = '';
-	autoControls = [];   // re-render replaces the DOM, so drop stale references
-	(CFG.sections || []).forEach(function(sec) {
-		var wrap = document.createElement('div');
-		wrap.className = sec.dense ? 'sec dense' : 'sec';
-		var h = document.createElement('h2');
-		h.appendChild(document.createTextNode(sec.title || ''));
-		wrap.appendChild(h);
-		(sec.items || []).forEach(function(item) { wrap.appendChild(renderItem(item)); });
-		host.appendChild(wrap);
-	});
-	document.getElementById('btn-reset').onclick = function() { doAction('reset', this); };
+	const host = $('#sections');
+	host.textContent = '';
+	S.autoControls = [];   // re-render replaces the DOM, so drop stale references
+
+	for (const sec of S.cfg.sections || []) {
+		const wrap = el('section', { class: 'sec' + (sec.dense ? ' dense' : '') });
+		wrap.append(el('h2', { text: sec.title || '' }));
+		const items = el('div', { class: 'sec-items' });
+		for (const item of sec.items || []) items.append(renderItem(item));
+		wrap.append(items);
+		host.append(wrap);
+	}
+
+	$('#btn-reset').onclick = resetAll;
 	paintState();
 }
 
 function renderItem(item) {
-	var box = document.createElement('div');
-	box.className = 'item';
-	box.setAttribute('data-search', ((item.label || '') + ' ' + (item.cmd || '') + ' ' + (item.type || '') + ' ' + (item.hint || '')).toLowerCase());
+	const isGroup = item.type === 'group';
+	const box = el('div', {
+		class: 'item' + (isGroup ? ' group' : ''),
+		'data-search': isGroup ? null
+			: ((item.label || '') + ' ' + (item.cmd || '') + ' ' + (item.type || '') + ' ' + (item.hint || '')).toLowerCase(),
+	});
 
-	var label = document.createElement('div');
-	label.className = 'label';
-	label.appendChild(document.createTextNode(item.label || item.cmd || ''));
-	if (item.hint) {
-		var hint = document.createElement('span');
-		hint.className = 'hint';
-		hint.appendChild(document.createTextNode(item.hint));
-		label.appendChild(hint);
+	if (item.label || item.hint) {
+		const head = el('div', { class: 'item-head' });
+		head.append(el('span', { class: 'label', text: item.label || item.cmd || '' }));
+		if (item.hint) head.append(el('span', { class: 'hint', text: item.hint }));
+		if (item.label) head.append(favButton(item.label));
+		box.append(head);
 	}
-	box.appendChild(label);
 
 	switch (item.type) {
 		case 'cmd': renderCmd(box, item); break;
@@ -366,863 +1144,761 @@ function renderItem(item) {
 		case 'dungeons': renderDungeons(box); break;
 		case 'items': renderItemSearch(box); break;
 		case 'gearsets': renderGearsets(box); break;
+		case 'itemlog': renderItemLog(box, item); break;
 		case 'group': renderGroup(box, item); break;
 		case 'quests': renderQuests(box); break;
 	}
 	return box;
 }
 
-// A group lays its children out side-by-side in one horizontal row instead of
-// stacking them, so related controls share a line and the panel stays compact.
-// Widths are explicit percentages because this browser has no flexbox.
+// A group lays its children out side-by-side instead of stacking them.
 function renderGroup(box, item) {
-	var kids = item.items || [];
-	var w = Math.floor(100 / kids.length) - 3;
-	var row = document.createElement('div');
-	row.className = 'itemrow';
-	kids.forEach(function(child) {
-		var cell = document.createElement('div');
-		cell.className = 'itemcell';
-		cell.style.width = w + '%';
-		cell.appendChild(renderItem(child));
-		row.appendChild(cell);
-	});
-	box.appendChild(row);
+	const kids = item.items || [];
+	const grid = el('div', { class: 'group-grid' + (item.layout === 'column' ? ' stack' : '') });
+	for (const child of kids) grid.append(renderItem(child));
+	box.append(grid);
 }
 
 function renderCmd(box, item) {
-	var wrap = document.createElement('div');
-	wrap.className = 'cmdwrap';
-	var b = document.createElement('button');
-	b.className = 'wide';
-	b.appendChild(document.createTextNode(item.label));
-	b.onclick = function() {
+	const btn = el('button', { class: 'btn wide', type: 'button', text: item.label });
+	btn.onclick = async () => {
 		// Fire the main command, then each checked chain command in order.
-		send(String(item.cmd).replace(/^\/@?/, ''), b, function() {
-			(item.chain || []).forEach(function(c) {
-				if (c._checked) send(String(c.cmd).replace(/^\/@?/, ''), b);
-			});
-		});
+		await send(stripPrefix(item.cmd), btn);
+		for (const c of item.chain || []) {
+			if (c._checked) await send(stripPrefix(c.cmd), btn);
+		}
 	};
-	wrap.appendChild(b);
+	box.append(btn);
+
 	if (item.chain && item.chain.length) {
-		var cbox = document.createElement('div');
-		cbox.className = 'chain';
-		item.chain.forEach(function(c) {
-			var row = document.createElement('label');
-			row.className = 'chainrow';
-			var cb = document.createElement('input');
-			cb.type = 'checkbox';
+		const chain = el('div', { class: 'chain' });
+		for (const c of item.chain) {
+			const cb = el('input', { type: 'checkbox' });
 			cb.checked = c.defaultOn !== false;
 			c._checked = cb.checked;
-			cb.onchange = function() { c._checked = cb.checked; };
-			var lbl = document.createElement('span');
-			lbl.appendChild(document.createTextNode(c.label));
-			row.appendChild(cb); row.appendChild(lbl);
-			cbox.appendChild(row);
-		});
-		wrap.appendChild(cbox);
+			cb.onchange = () => { c._checked = cb.checked; };
+			chain.append(el('label', { class: 'chain-item' }, cb, el('span', { text: c.label })));
+		}
+		box.append(chain);
 	}
-	if (item.auto) wrap.appendChild(renderAuto(item.auto));
-	box.appendChild(wrap);
+
+	if (item.auto) box.append(renderAuto(item.auto));
 }
 
 // Auto action: a checkbox + small seconds box that makes the mod fire this
 // command N seconds after death. State is owned by the mod (it survives page
 // reloads and mod reloads); this control just reads and pushes it.
 function renderAuto(auto) {
-	var cmd = String(auto.cmd).replace(/^\/@?/, '');
-	var st = (STATE.auto && STATE.auto[cmd]) || {};
+	const cmd = stripPrefix(auto.cmd);
+	const st = (S.game.auto && S.game.auto[cmd]) || {};
 
-	var lbl = document.createElement('label');
-	lbl.className = 'autorow';
-
-	var cb = document.createElement('input');
-	cb.type = 'checkbox';
+	const cb = el('input', { type: 'checkbox' });
 	cb.checked = !!st.enabled;
 
-	var txt = document.createElement('span');
-	txt.appendChild(document.createTextNode((auto.label || 'Auto') + ' after'));
-
-	var num = document.createElement('input');
-	num.type = 'text';
-	num.className = 'tiny';
+	const num = el('input', { type: 'text', class: 'tiny' });
 	num.value = String(st.seconds !== undefined ? st.seconds : (auto.defaultSeconds || 5));
 
-	var unit = document.createElement('span');
-	unit.appendChild(document.createTextNode('s'));
-
-	function push() {
-		getJSON('/auto?cmd=' + encodeURIComponent(cmd) + '&enabled=' + (cb.checked ? 1 : 0)
-			+ '&seconds=' + encodeURIComponent(num.value), function(r, err) {
-				if (err || !r || !r.ok) return status('Auto setting failed', true);
-				cb.checked = !!r.action.enabled;
-				num.value = String(r.action.seconds);
-				status('Auto ' + cmd + ': ' + (r.action.enabled ? 'on, ' + r.action.seconds + 's' : 'off'));
-			});
-	}
+	const push = async () => {
+		try {
+			const r = await getJSON('/auto?cmd=' + encodeURIComponent(cmd)
+				+ '&enabled=' + (cb.checked ? 1 : 0)
+				+ '&seconds=' + encodeURIComponent(num.value));
+			cb.checked = !!r.action.enabled;
+			num.value = String(r.action.seconds);
+			status('Auto ' + cmd + ': ' + (r.action.enabled ? 'on, ' + r.action.seconds + 's' : 'off'));
+		} catch (e) {
+			status('Auto setting failed', true);
+		}
+	};
 	cb.onchange = push;
 	num.onchange = push;
-	num.onkeydown = function(e) { if (e.keyCode == 13) push(); };
+	num.onkeydown = e => { if (e.key === 'Enter') push(); };
 
-	lbl.appendChild(cb); lbl.appendChild(txt); lbl.appendChild(num); lbl.appendChild(unit);
-	autoControls.push({ command: cmd, cb: cb, num: num });
-	return lbl;
+	S.autoControls.push({ command: cmd, cb, num });
+	return el('label', { class: 'autorow' },
+		cb,
+		el('span', { text: (auto.label || 'Auto') + ' after' }),
+		num,
+		el('span', { class: 'dim', text: 's' })
+	);
 }
 
 function renderOptions(box, item) {
-	var row = document.createElement('div');
-	row.className = 'row';
-	var cmd = String(item.cmd).replace(/^\/@?/, '');
-	(item.options || []).forEach(function(opt) {
-		var b = document.createElement('button');
-		b.setAttribute('data-cmd', cmd);
-		b.setAttribute('data-args', opt.args);
-		b.appendChild(document.createTextNode(opt.label));
-		b.onclick = function() { send(cmd + ' ' + opt.args, b); };
-		row.appendChild(b);
-	});
-	box.appendChild(row);
+	const cmd = stripPrefix(item.cmd);
+	const row = el('div', { class: 'controls' });
+	for (const opt of item.options || []) {
+		const b = el('button', { class: 'btn value', type: 'button', 'data-cmd': cmd, 'data-args': opt.args, text: opt.label });
+		b.onclick = () => send(cmd + ' ' + opt.args, b);
+		row.append(b);
+	}
+	box.append(row);
 
 	// Optional free field, for values without a preset button.
 	if (item.allowCustom) {
-		var crow = document.createElement('div');
-		crow.className = 'row';
-		crow.style.marginTop = '5px';
-		var inp = document.createElement('input');
-		inp.type = 'text';
-		inp.className = 'grow60';
-		inp.placeholder = item.customPlaceholder || 'custom value';
-		var cb = document.createElement('button');
-		cb.appendChild(document.createTextNode('Send ' + cmd));
-		function sendCustom() {
-			var v = inp.value.replace(/^\s+|\s+$/g, '');
+		const crow = el('div', { class: 'controls' });
+		const inp = el('input', { type: 'text', class: 'grow', 'aria-label': 'Custom value for ' + cmd, placeholder: item.customPlaceholder || 'custom value' });
+		const cb = el('button', { class: 'btn', type: 'button', text: 'Send' });
+		const sendCustom = () => {
+			const v = inp.value.trim();
 			if (!v) return;
 			send(cmd + ' ' + v, cb);
 			inp.value = '';
-		}
-		inp.onkeydown = function(e) { if (e.keyCode == 13) sendCustom(); };
+		};
+		inp.onkeydown = e => { if (e.key === 'Enter') sendCustom(); };
 		cb.onclick = sendCustom;
-		crow.appendChild(inp);
-		crow.appendChild(cb);
-		box.appendChild(crow);
+		crow.append(inp, cb);
+		box.append(crow);
 	}
 }
 
 function renderToggle(box, item) {
-	var row = document.createElement('div');
-	row.className = 'row';
-	var cmd = String(item.cmd).replace(/^\/@?/, '');
-	['on', 'off'].forEach(function(state) {
-		var b = document.createElement('button');
-		b.setAttribute('data-cmd', cmd);
-		b.setAttribute('data-args', state);
-		b.appendChild(document.createTextNode(state.toUpperCase()));
-		b.onclick = function() { send(cmd + ' ' + state, b); };
-		row.appendChild(b);
-	});
-	box.appendChild(row);
+	const cmd = stripPrefix(item.cmd);
+	const seg = el('div', { class: 'seg' });
+	for (const value of ['on', 'off']) {
+		const b = el('button', { class: 'btn', type: 'button', 'data-cmd': cmd, 'data-args': value, text: value.toUpperCase() });
+		b.onclick = () => send(cmd + ' ' + value, b);
+		seg.append(b);
+	}
+	box.append(seg);
 }
 
 function renderInput(box, item) {
-	var row = document.createElement('div');
-	row.className = 'row';
-	var inp = document.createElement('input');
-	inp.type = 'text';
-	inp.className = 'grow60';
-	inp.placeholder = item.placeholder || 'arguments';
-	inp.onkeydown = function(e) { if (e.keyCode == 13) sendIt(); };
-	var b = document.createElement('button');
-	b.appendChild(document.createTextNode('Send'));
-	function sendIt() {
-		var v = inp.value.replace(/^\s+|\s+$/g, '');
+	const row = el('div', { class: 'controls' });
+	const inp = el('input', { type: 'text', class: 'grow', placeholder: item.placeholder || 'arguments' });
+	const b = el('button', { class: 'btn', type: 'button', text: 'Send' });
+	const sendIt = () => {
+		const v = inp.value.trim();
 		if (!v && !item.allowEmpty) return;
 		send(item.cmd + (v ? ' ' + v : ''), b);
 		inp.value = '';
-	}
+	};
+	inp.onkeydown = e => { if (e.key === 'Enter') sendIt(); };
 	b.onclick = sendIt;
-	row.appendChild(inp);
-	row.appendChild(b);
-	box.appendChild(row);
+	row.append(inp, b);
+	box.append(row);
 }
 
 // ---------- teleport to an arbitrary zone ----------
 function renderTeleport(box, item) {
-	var row1 = document.createElement('div');
-	row1.className = 'row';
-	var search = document.createElement('input');
-	search.type = 'text';
-	search.className = 'w100';
-	search.placeholder = 'zone name or id';
-	row1.appendChild(search);
-	box.appendChild(row1);
+	const search = el('input', { type: 'text', class: 'grow', 'aria-label': 'Zone name or id', placeholder: 'zone name or id' });
+	box.append(el('div', { class: 'controls' }, search));
 
-	var list = document.createElement('div');
-	list.className = 'list';
-	box.appendChild(list);
+	const list = el('div', { class: 'list' });
+	box.append(list);
 
-	var row2 = document.createElement('div');
-	row2.className = 'row';
-	row2.style.marginTop = '6px';
-	var ax = numInput('x'), ay = numInput('y'), az = numInput('z');
-	row2.appendChild(ax); row2.appendChild(ay); row2.appendChild(az);
-
-	var grab = document.createElement('button');
-	grab.appendChild(document.createTextNode('My position'));
-	grab.onclick = function() {
-		var l = STATE.loc;
+	const ax = numInput('x', 'X coordinate'), ay = numInput('y', 'Y coordinate'), az = numInput('z', 'Z coordinate');
+	const grab = el('button', { class: 'btn', type: 'button', text: 'My position' });
+	grab.onclick = () => {
+		const l = S.game.loc;
 		if (!l) return status('Position unknown - move a little', true);
 		ax.value = String(Math.round(l.x));
 		ay.value = String(Math.round(l.y));
 		az.value = String(Math.round(l.z));
 	};
-	row2.appendChild(grab);
-
-	var here = document.createElement('button');
-	here.appendChild(document.createTextNode('This zone'));
-	here.onclick = function() {
-		if (!STATE.zone) return status('No current zone', true);
-		pickedZone = STATE.zone;
-		search.value = ((dungeonNameById[STATE.zone] || zoneNameById[STATE.zone]) ? (dungeonNameById[STATE.zone] || zoneNameById[STATE.zone]) + ' ' : '') + STATE.zone;
+	const here = el('button', { class: 'btn', type: 'button', text: 'This zone' });
+	here.onclick = () => {
+		if (!S.game.zone) return status('No current zone', true);
+		pickedZone = S.game.zone;
+		search.value = ((S.dungeonNameById[S.game.zone] || S.zoneNameById[S.game.zone]) ? (S.dungeonNameById[S.game.zone] || S.zoneNameById[S.game.zone]) + ' ' : '') + S.game.zone;
 		paint();
 	};
-	row2.appendChild(here);
-	box.appendChild(row2);
+	box.append(el('div', { class: 'controls' }, ax, ay, az, grab, here));
 
-	var row3 = document.createElement('div');
-	row3.className = 'row';
-	var sendBtn = document.createElement('button');
-	sendBtn.appendChild(document.createTextNode('Teleport'));
-	sendBtn.onclick = function() {
-		var id = resolveZone();
+	const sendBtn = el('button', { class: 'btn', type: 'button', text: 'Teleport' });
+	sendBtn.onclick = () => {
+		const id = resolveZone();
 		if (id === null) return status('Pick a zone from the list, or type its id', true);
 		send('teleport ' + id + ' ' + (ax.value || 0) + ' ' + (ay.value || 0) + ' ' + (az.value || 0), sendBtn);
 	};
-	row3.appendChild(sendBtn);
-	box.appendChild(row3);
+	box.append(el('div', { class: 'controls' }, sendBtn));
 
-	var pickedZone = null;
+	let pickedZone = null;
 
 	// A bare number typed in the box always wins; otherwise use the clicked zone.
 	function resolveZone() {
-		var t = search.value.replace(/\s+/g, '');
+		const t = search.value.replace(/\s+/g, '');
 		if (/^\d+$/.test(t)) return t;
 		return pickedZone;
 	}
 
 	function paint() {
-		var q = search.value.replace(/^\s+|\s+$/g, '').toLowerCase();
-		list.innerHTML = '';
-		var shown = 0;
-		var rows = ZONES.length ? ZONES : dungeonFallback();
-		rows.forEach(function(z) {
-			var nm = zoneName(z) || z.name || '';
-			if (q && nm.toLowerCase().indexOf(q) === -1 && String(z.id).indexOf(q) === -1) return;
-			if (++shown > 60) return;
-			var opt = document.createElement('div');
-			opt.className = 'opt' + (pickedZone === z.id ? ' active' : '');
-			var n = document.createElement('div');
-			n.appendChild(document.createTextNode((nm ? nm : 'zone ' + z.id) + ' - ' + z.id));
-			var c = document.createElement('div');
-			c.className = 'id';
-			c.appendChild(document.createTextNode(z.channelType || (z.note ? 'dungeon' : '')));
-			opt.appendChild(n); opt.appendChild(c);
-			opt.onclick = function() {
+		const q = search.value.trim().toLowerCase();
+		list.textContent = '';
+		let shown = 0;
+		const rows = S.zones.length ? S.zones : dungeonFallback();
+		for (const z of rows) {
+			const nm = zoneName(z) || z.name || '';
+			if (q && nm.toLowerCase().indexOf(q) === -1 && String(z.id).indexOf(q) === -1) continue;
+			if (++shown > 60) continue;
+			const opt = el('button', { class: 'opt' + (pickedZone === z.id ? ' active' : ''), type: 'button' },
+				el('span', { class: 'name', text: (nm ? nm : 'zone ' + z.id) + ' - ' + z.id }),
+				el('span', { class: 'id', text: z.channelType || (z.note ? 'dungeon' : '') })
+			);
+			opt.onclick = () => {
 				pickedZone = z.id;
 				search.value = (nm ? nm + ' ' : '') + z.id;
 				paint();
 				status('Zone ' + z.id + ' picked - set coordinates, then Teleport');
 			};
-			list.appendChild(opt);
-		});
+			list.append(opt);
+		}
 		if (!shown) {
-			var e = document.createElement('div');
-			e.className = 'empty';
-			e.appendChild(document.createTextNode(
-				!zonesLoaded ? 'Loading zones...'
-					: (zonesError ? 'Zone list failed: ' + zonesError + ' - type a zone id.'
-						: 'No match - type a zone id directly.')));
-			list.appendChild(e);
+			list.append(el('div', { class: 'empty', text: !S.zonesLoaded ? 'Loading zones...'
+				: (S.zonesError ? 'Zone list failed: ' + S.zonesError + ' - type a zone id.'
+					: 'No match - type a zone id directly.') }));
 		}
 	}
 
 	// Dungeon ids are a guaranteed-available fallback if the DataCenter query
 	// did not return anything.
 	function dungeonFallback() {
-		if (!DUNGEONS.dungeons) return [];
-		return DUNGEONS.dungeons.map(function(d) {
-			return { id: d.contId, name: d.name, note: d.note, channelType: 'dungeon' };
-		});
+		return (S.dungeons.dungeons || []).map(d => ({
+			id: d.contId, name: d.name, note: d.note, channelType: 'dungeon'
+		}));
 	}
 
-	bindInput(search, function() {
+	search.oninput = () => {
 		// If the box no longer mentions the picked zone, treat it as unselected
 		// so a stale id can never be teleported to by accident.
 		if (pickedZone !== null && search.value.indexOf(String(pickedZone)) === -1) pickedZone = null;
 		paint();
-	});
-	watchValue(search, function() {
-		if (pickedZone !== null && search.value.indexOf(String(pickedZone)) === -1) pickedZone = null;
-		paint();
-	});
+	};
 	paint();
 }
-function numInput(ph) {
-	var i = document.createElement('input');
-	i.type = 'text';
-	i.className = 'num';
-	i.placeholder = ph;
-	return i;
+
+function numInput(ph, label) {
+	return el('input', { type: 'text', class: 'num', 'aria-label': label || ph, placeholder: ph });
 }
+
 function zoneName(z) {
 	if (!z) return '';
 	// dungeons.json (your sheet) first: the DataCenter keeps dev placeholder
 	// names for some dungeons, and lacks 8 of yours.
-	if (dungeonNameById[z.id]) return dungeonNameById[z.id];
-	if (zoneNameById[z.id]) return zoneNameById[z.id];
-	var keys = ['name', 'zoneName', 'mapName', 'string', 'title', 'desc'];
-	for (var i = 0; i < keys.length; i++) {
-		if (typeof z[keys[i]] === 'string' && z[keys[i]]) return z[keys[i]];
+	if (S.dungeonNameById[z.id]) return S.dungeonNameById[z.id];
+	if (S.zoneNameById[z.id]) return S.zoneNameById[z.id];
+	for (const key of ['name', 'zoneName', 'mapName', 'string', 'title', 'desc']) {
+		if (typeof z[key] === 'string' && z[key]) return z[key];
 	}
 	return '';
 }
 
 // ---------- dungeons ----------
 function renderDungeons(box) {
-	var row = document.createElement('div');
-	row.className = 'row';
-	var search = document.createElement('input');
-	search.type = 'text';
-	search.className = 'grow60';
-	search.placeholder = 'Filter 146 dungeons...';
-	row.appendChild(search);
-	var idx = document.createElement('input');
-	idx.type = 'text';
-	idx.className = 'num';
-	idx.value = '0';
-	idx.title = 'enter-index';
-	row.appendChild(idx);
-	box.appendChild(row);
+	const search = el('input', { type: 'text', class: 'grow', 'aria-label': 'Filter dungeons', placeholder: 'Filter ' + (S.dungeons.dungeons || []).length + ' dungeons...' });
+	const idx = el('input', { type: 'text', class: 'num', title: 'enter-index', 'aria-label': 'Enter index', value: '0' });
+	box.append(el('div', { class: 'controls' }, search, idx));
 
-	var list = document.createElement('div');
-	list.className = 'list';
-	box.appendChild(list);
+	const list = el('div', { class: 'list' });
+	box.append(list);
 
-	var addRow = document.createElement('div');
-	addRow.className = 'row';
-	addRow.style.marginTop = '6px';
-	var nameInp = document.createElement('input');
-	nameInp.type = 'text';
-	nameInp.className = 'grow60';
-	nameInp.placeholder = 'Name current zone as...';
-	var saveBtn = document.createElement('button');
-	saveBtn.appendChild(document.createTextNode('Save current zone'));
-	saveBtn.onclick = function() {
-		var n = nameInp.value.replace(/^\s+|\s+$/g, '');
+	const nameInp = el('input', { type: 'text', class: 'grow', 'aria-label': 'Name for the current zone', placeholder: 'Name current zone as...' });
+	const saveBtn = el('button', { class: 'btn', type: 'button', text: 'Save current zone' });
+	saveBtn.onclick = async () => {
+		const n = nameInp.value.trim();
 		if (!n) return;
-		getJSON('/dungeons/add?name=' + encodeURIComponent(n), function(r, err) {
-			if (err || !r.ok) return status('Save failed: ' + (err || r.error), true);
-			DUNGEONS = { dungeons: r.dungeons };
+		try {
+			const r = await getJSON('/dungeons/add?name=' + encodeURIComponent(n));
+			if (!r.ok) return status('Save failed: ' + (r.error || 'unknown'), true);
+			S.dungeons = { dungeons: r.dungeons };
 			nameInp.value = '';
-			status('Saved "' + n + '" = zone ' + STATE.zone);
+			status('Saved "' + n + '" = zone ' + S.game.zone);
 			paint();
-		});
+		} catch (e) {
+			status('Save failed: ' + e.message, true);
+		}
 	};
-	addRow.appendChild(nameInp);
-	addRow.appendChild(saveBtn);
-	box.appendChild(addRow);
+	box.append(el('div', { class: 'controls' }, nameInp, saveBtn));
 
-	var custom = null;
+	let custom = null;
 	function paint() {
-		var q = search.value.toLowerCase();
-		list.innerHTML = '';
-		var shown = 0;
-		(DUNGEONS.dungeons || []).forEach(function(d) {
-			if (q && String(d.name).toLowerCase().indexOf(q) === -1) return;
+		const q = search.value.trim().toLowerCase();
+		list.textContent = '';
+		let shown = 0;
+		for (const d of S.dungeons.dungeons || []) {
+			if (q && String(d.name).toLowerCase().indexOf(q) === -1) continue;
 			shown++;
-			var opt = document.createElement('div');
-			opt.className = 'opt';
-			var n = document.createElement('div');
-			n.appendChild(document.createTextNode(d.note ? d.name + ' - ' + d.note : d.name));
-			var i = document.createElement('div');
-			i.className = 'id';
-			i.appendChild(document.createTextNode('contId ' + d.contId));
-			opt.appendChild(n); opt.appendChild(i);
-			opt.onclick = function() { send('enter_dungeon ' + d.contId + ' ' + (idx.value || '0'), opt); };
-			list.appendChild(opt);
-		});
+			const opt = el('button', { class: 'opt', type: 'button' },
+				el('span', { class: 'name', text: d.note ? d.name + ' - ' + d.note : d.name }),
+				el('span', { class: 'id', text: 'contId ' + d.contId })
+			);
+			opt.onclick = () => send('enter_dungeon ' + d.contId + ' ' + (idx.value || '0'), opt);
+			list.append(opt);
+		}
 		if (custom) {
-			var opt = document.createElement('div');
-			opt.className = 'opt';
-			var n2 = document.createElement('div');
-			n2.appendChild(document.createTextNode(custom.name));
-			var i2 = document.createElement('div');
-			i2.className = 'id';
-			i2.appendChild(document.createTextNode('contId ' + custom.contId + ' (current)'));
-			opt.appendChild(n2); opt.appendChild(i2);
-			opt.onclick = function() { send('enter_dungeon ' + custom.contId + ' ' + (idx.value || '0'), opt); };
-			list.appendChild(opt);
+			const opt = el('button', { class: 'opt', type: 'button' },
+				el('span', { class: 'name', text: custom.name }),
+				el('span', { class: 'id', text: 'contId ' + custom.contId + ' (current)' })
+			);
+			opt.onclick = () => send('enter_dungeon ' + custom.contId + ' ' + (idx.value || '0'), opt);
+			list.append(opt);
 			shown++;
 		}
 		if (!shown) {
-			var e = document.createElement('div');
-			e.className = 'empty';
-			e.appendChild(document.createTextNode('No match. Enter one in game, then "Save current zone".'));
-			list.appendChild(e);
+			list.append(el('div', { class: 'empty', text: 'No match. Enter one in game, then "Save current zone".' }));
 		}
 	}
-	bindInput(search, paint);
-	watchValue(search, paint);
+	search.oninput = paint;
 	paint();
 }
 
-// ---------- item search -> /@makeitems ----------
+// ---------- item search -> makeitems ----------
 function renderItemSearch(box) {
-	var row = document.createElement('div');
-	row.className = 'row';
-	var q = document.createElement('input');
-	q.type = 'text';
-	q.className = 'grow60';
-	q.placeholder = 'Search item names...';
-	var btn = document.createElement('button');
-	btn.appendChild(document.createTextNode('Search'));
-	row.appendChild(q); row.appendChild(btn);
-	box.appendChild(row);
+	const q = el('input', { type: 'text', class: 'grow', 'aria-label': 'Search item names', placeholder: 'Search item names...' });
+	const btn = el('button', { class: 'btn', type: 'button', text: 'Search' });
+	box.append(el('div', { class: 'controls' }, q, btn));
 
 	// Selected items shown as removable chips so the pending command is visible.
-	var chips = document.createElement('div');
-	chips.className = 'chips';
-	box.appendChild(chips);
+	const chips = el('div', { class: 'chips' });
+	box.append(chips);
 
-	var qty = document.createElement('div');
-	qty.className = 'row';
-	qty.style.marginTop = '6px';
-	var qtyInp = document.createElement('input');
-	qtyInp.type = 'text';
-	qtyInp.className = 'num';
-	qtyInp.value = '1';
-	qty.appendChild(qtyInp);
-	var sendSel = document.createElement('button');
-	sendSel.appendChild(document.createTextNode('Makeitems selected'));
-	sendSel.onclick = function() {
-		if (!selectedItems.length) return status('No items selected', true);
-		send('makeitems ' + selectedItems.join(' ') + ' ' + (qtyInp.value || '1'), sendSel);
+	const qtyInp = el('input', { type: 'text', class: 'num', 'aria-label': 'Quantity', value: '1' });
+	const sendSel = el('button', { class: 'btn', type: 'button', text: 'Makeitems selected' });
+	sendSel.onclick = () => {
+		if (!S.selectedItems.length) return status('No items selected', true);
+		send('makeitems ' + S.selectedItems.join(' ') + ' ' + (qtyInp.value || '1'), sendSel);
 	};
-	var clearSel = document.createElement('button');
-	clearSel.appendChild(document.createTextNode('Clear'));
-	clearSel.onclick = function() {
-		selectedItems = [];
+	const clearSel = el('button', { class: 'btn', type: 'button', text: 'Clear' });
+	clearSel.onclick = () => {
+		S.selectedItems = [];
 		paintChips();
+		// Uncheck every individual item checkbox still shown in the view.
+		list.querySelectorAll('tr.pick').forEach(row => {
+			row.className = 'pick';
+			row.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+		});
 	};
-	qty.appendChild(sendSel);
-	qty.appendChild(clearSel);
-	box.appendChild(qty);
+	box.append(el('div', { class: 'controls' }, qtyInp, sendSel, clearSel));
 
-	var list = document.createElement('div');
-	list.className = 'list';
-	box.appendChild(list);
+	const list = el('div', { class: 'list' });
+	box.append(list);
 
 	function paintChips() {
-		chips.innerHTML = '';
-		if (!selectedItems.length) {
-			chips.appendChild(document.createTextNode(''));
-			return;
-		}
-		selectedItems.forEach(function(id, idx) {
-			var chip = document.createElement('span');
-			chip.className = 'chip';
-			var label = document.createElement('span');
-			label.appendChild(document.createTextNode(String(id)));
-			var x = document.createElement('span');
-			x.className = 'chip-x';
-			x.appendChild(document.createTextNode('x'));
-			x.onclick = function() {
-				selectedItems.splice(idx, 1);
+		chips.textContent = '';
+		for (const id of S.selectedItems) {
+			const x = el('button', { class: 'x', type: 'button', 'aria-label': 'Remove item ' + id, text: '×' });
+			x.onclick = () => {
+				S.selectedItems = S.selectedItems.filter(v => v !== id);
 				paintChips();
 			};
-			chip.appendChild(label);
-			chip.appendChild(x);
-			chips.appendChild(chip);
-		});
+			chips.append(el('span', { class: 'chip' }, el('span', { text: String(id) }), x));
+		}
 	}
 
-	q.onkeydown = function(e) { if (e.keyCode == 13) btn.onclick(); };
-	btn.onclick = function() {
-		var term = q.value.replace(/^\s+|\s+$/g, '');
+	q.onkeydown = e => { if (e.key === 'Enter') btn.click(); };
+	btn.onclick = async () => {
+		const term = q.value.trim();
 		if (term.length < 2) return;
-		list.innerHTML = '<div class="empty">searching...</div>';
-		getJSON('/items?q=' + encodeURIComponent(term), function(res, err) {
-			list.innerHTML = '';
-			if (err || !res) return list.innerHTML = '<div class="empty">Search failed</div>';
-			if (!res.length) return list.innerHTML = '<div class="empty">No items matched "' + esc(term) + '"</div>';
+		list.textContent = '';
+		list.append(el('div', { class: 'empty', text: 'searching...' }));
+		try {
+			const res = await getJSON('/items?q=' + encodeURIComponent(term));
+			list.textContent = '';
+			if (!res.length) {
+				list.append(el('div', { class: 'empty', text: 'No items matched "' + term + '"' }));
+				return;
+			}
 			// Two-column table so every result is exactly one row: name left, id right.
-			// A <label> would be inline and pack several rows per line.
-			var table = document.createElement('table');
-			table.className = 'picks';
-			res.forEach(function(it) {
-				var tr = document.createElement('tr');
-				tr.className = 'pick';
-
-				var nameCell = document.createElement('td');
-				nameCell.className = 'nm';
-				var cb = document.createElement('input');
-				cb.type = 'checkbox';
-				cb.checked = selectedItems.indexOf(it.id) !== -1;
-				if (cb.checked) tr.className += ' active';
-				cb.onchange = function() {
-					var at = selectedItems.indexOf(it.id);
-					if (cb.checked && at === -1) selectedItems.push(it.id);
-					if (!cb.checked && at !== -1) selectedItems.splice(at, 1);
-					if (cb.checked) tr.className = 'pick active';
-					else tr.className = 'pick';
+			const table = el('table', { class: 'picks' });
+			for (const it of res) {
+				const cb = el('input', { type: 'checkbox' });
+				cb.checked = S.selectedItems.indexOf(it.id) !== -1;
+				const row = el('tr', { class: 'pick' + (cb.checked ? ' active' : '') });
+				cb.onchange = () => {
+					const at = S.selectedItems.indexOf(it.id);
+					if (cb.checked && at === -1) S.selectedItems.push(it.id);
+					if (!cb.checked && at !== -1) S.selectedItems.splice(at, 1);
+					row.className = 'pick' + (cb.checked ? ' active' : '');
 					paintChips();
 				};
-				// A <label> used to give click-the-row-to-toggle for free; a table
+				// A <label> would give click-the-row-to-toggle for free; a table
 				// row does not, so re-add it (ignoring clicks on the checkbox
-				// itself, which already toggled via onchange).
-				tr.onclick = function(e) {
+				// itself, which already toggled).
+				row.onclick = e => {
 					if (e && e.target === cb) return;
 					cb.checked = !cb.checked;
 					cb.onchange();
 				};
-				nameCell.appendChild(cb);
-				nameCell.appendChild(document.createTextNode(it.name));
-
-				var idCell = document.createElement('td');
-				idCell.className = 'id';
-				idCell.appendChild(document.createTextNode(String(it.id)));
-
-				tr.appendChild(nameCell);
-				tr.appendChild(idCell);
-				table.appendChild(tr);
-			});
-			list.appendChild(table);
-		});
+				row.append(
+					el('td', { class: 'nm' }, cb, el('span', { text: it.name })),
+					el('td', { class: 'id', text: String(it.id) })
+				);
+				table.append(row);
+			}
+			list.append(table);
+		} catch (e) {
+			list.textContent = '';
+			list.append(el('div', { class: 'empty', text: 'Search failed' }));
+		}
 	};
 	paintChips();
 }
 
 // ---------- gear sets (from the spreadsheet) ----------
-// ---------- questing: search lines + quests, START / NEXT STEP ----------
-// Quest lines are collapsible headers carrying no buttons; only the quests
-// inside a line get buttons. Everything starts collapsed, so 2735 quests render
-// as 41 headers instead of thousands of DOM nodes in a slow browser engine.
-var questExpanded = {};   // line key -> true, survives filtering while typing
-var SEARCH_CAPS = { perLine: 60, total: 200, loose: 120 };
-
-function renderQuests(box) {
-	var searchRow = document.createElement('div');
-	searchRow.className = 'row';
-	var q = document.createElement('input');
-	q.type = 'text';
-	q.className = 'w100';
-	q.placeholder = 'Search quest lines and quests...';
-	searchRow.appendChild(q);
-	box.appendChild(searchRow);
-
-	var info = document.createElement('div');
-	info.className = 'hint';
-	info.style.margin = '4px 0 2px';
-	box.appendChild(info);
-
-	var list = document.createElement('div');
-	list.className = 'list';
-	box.appendChild(list);
-
-	function hits(list, term) {
-		var out = [];
-		for (var i = 0; i < list.length; i++) {
-			if (list[i].name.toLowerCase().indexOf(term) !== -1) out.push(list[i]);
-		}
-		return out;
-	}
-
-	function note(html) {
-		var d = document.createElement('div');
-		d.className = 'qnote';
-		d.innerHTML = html;
-		return d;
-	}
-
-	function lineHeader(line, key, open, suffix) {
-		var h = document.createElement('div');
-		h.className = 'qline';
-		var arrow = document.createElement('span');
-		arrow.className = 'qarrow';
-		arrow.appendChild(document.createTextNode(open ? 'v' : '>'));
-		var nm = document.createElement('span');
-		nm.appendChild(document.createTextNode(line.name));
-		var ct = document.createElement('span');
-		ct.className = 'qcount';
-		ct.appendChild(document.createTextNode(line.quests.length + ' quests' + (suffix ? ', ' + suffix : '')));
-		h.appendChild(arrow);
-		h.appendChild(nm);
-		h.appendChild(ct);
-		h.onclick = function() { questExpanded[key] = !questExpanded[key]; paint(); };
-		return h;
-	}
-
-	function questRow(qst) {
-		var row = document.createElement('div');
-		row.className = 'qrow';
-		var nm = document.createElement('span');
-		nm.className = 'qname';
-		nm.appendChild(document.createTextNode(qst.name));
-		var id = document.createElement('span');
-		id.className = 'qid';
-		id.appendChild(document.createTextNode(String(qst.id)));
-		var btns = document.createElement('span');
-		btns.className = 'qbtns';
-		var bStart = document.createElement('button');
-		bStart.appendChild(document.createTextNode('START'));
-		bStart.onclick = function() { send('start_quest ' + qst.id, bStart); };
-		var bNext = document.createElement('button');
-		bNext.appendChild(document.createTextNode('NEXT STEP'));
-		bNext.onclick = function() { send('next_task ' + qst.id, bNext); };
-		btns.appendChild(bStart);
-		btns.appendChild(bNext);
-		row.appendChild(nm);
-		row.appendChild(id);
-		row.appendChild(btns);
-		return row;
-	}
-
-	function paint() {
-		var term = q.value.replace(/^\s+|\s+$/g, '').toLowerCase();
-		list.innerHTML = '';
-
-		if (!QUEST_INDEX.counts || !QUEST_INDEX.counts.quests) {
-			info.innerHTML = questError
-				? 'Quest data unavailable: ' + esc(questError)
-				: 'Loading quests...';
-			return;
-		}
-		info.innerHTML = esc(QUEST_INDEX.counts.quests) + ' quests &middot; '
-			+ esc(QUEST_INDEX.counts.lines) + ' lines';
-
-		var rendered = 0;
-		for (var i = 0; i < QUEST_INDEX.lines.length; i++) {
-			var line = QUEST_INDEX.lines[i];
-			var lineHit = !term || line.name.toLowerCase().indexOf(term) !== -1;
-			var questHits = term ? hits(line.quests, term) : [];
-			if (term && !lineHit && !questHits.length) continue;
-
-			var key = 'L' + line.id;
-			var open = questExpanded[key] || (term && (lineHit || questHits.length));
-			list.appendChild(lineHeader(line, key, open,
-				(term && !lineHit && questHits.length) ? questHits.length + ' matching' : ''));
-
-			if (!open) continue;
-			var show = (term && !lineHit) ? questHits : line.quests;
-			var cap = Math.min(show.length, term ? SEARCH_CAPS.perLine : show.length);
-			for (var k = 0; k < cap && rendered < SEARCH_CAPS.total; k++) {
-				list.appendChild(questRow(show[k]));
-				rendered++;
-			}
-			if (show.length > cap) list.appendChild(note('&nbsp;&nbsp;+' + (show.length - cap) + ' more in this line'));
-		}
-
-		// Quests in no line. Hidden entirely while searching if nothing matches.
-		if (QUEST_INDEX.loose.length) {
-			var looseHits = term ? hits(QUEST_INDEX.loose, term) : QUEST_INDEX.loose;
-			if (!term || looseHits.length) {
-				var looseKey = 'loose';
-				var looseOpen = questExpanded[looseKey] || (term && looseHits.length);
-				var lh = document.createElement('div');
-				lh.className = 'qline';
-				var arrow = document.createElement('span');
-				arrow.className = 'qarrow';
-				arrow.appendChild(document.createTextNode(looseOpen ? 'v' : '>'));
-				var nm = document.createElement('span');
-				nm.appendChild(document.createTextNode('Other quests'));
-				var ct = document.createElement('span');
-				ct.className = 'qcount';
-				ct.appendChild(document.createTextNode(
-					QUEST_INDEX.loose.length + (term ? ' / ' + looseHits.length + ' matching' : '')));
-				lh.appendChild(arrow);
-				lh.appendChild(nm);
-				lh.appendChild(ct);
-				lh.onclick = function() { questExpanded[looseKey] = !questExpanded[looseKey]; paint(); };
-				list.appendChild(lh);
-
-				if (looseOpen) {
-					var showLoose = term ? looseHits : QUEST_INDEX.loose;
-					var lcap = Math.min(showLoose.length, SEARCH_CAPS.loose);
-					for (var m = 0; m < lcap; m++) list.appendChild(questRow(showLoose[m]));
-					if (showLoose.length > lcap)
-						list.appendChild(note('&nbsp;&nbsp;+' + (showLoose.length - lcap) + ' more - keep typing to narrow'));
-				}
-			}
-		}
-
-		if (!list.children.length) {
-			var none = document.createElement('div');
-			none.className = 'empty';
-			none.appendChild(document.createTextNode('No quest or line matches "' + term + '"'));
-			list.appendChild(none);
-		}
-	}
-
-	bindInput(q, paint);
-	watchValue(q, paint);
-	paint();
-}
-
-// ---------- gear sets (from the spreadsheet) ----------
 function renderGearsets(box) {
-	var row = document.createElement('div');
-	row.className = 'row';
-
-	// Text filters (substring, case-insensitive). Bind every event an old engine
-	// might emit, and show the match count so filtering is always observable.
-	var filters = {};
-	var filterInputs = {};
-	(GEARSETS.filters || []).forEach(function(f) {
+	const filters = {};
+	const filterInputs = {};
+	const row = el('div', { class: 'controls' });
+	for (const f of S.gearsets.filters || []) {
 		filters[f.key] = '';
-		var inp = document.createElement('input');
-		inp.type = 'text';
-		inp.className = 'grow30';
-		inp.placeholder = f.label;
-		var onFilter = function() { filters[f.key] = inp.value.replace(/^\s+|\s+$/g, '').toLowerCase(); paint(); };
-		bindInput(inp, onFilter);
-		watchValue(inp, onFilter);
+		const inp = el('input', { type: 'text', class: 'grow', 'aria-label': f.label, placeholder: f.label });
+		const onFilter = () => {
+			filters[f.key] = inp.value.trim();
+			paint();
+		};
+		inp.oninput = onFilter;
 		filterInputs[f.key] = inp;
-		row.appendChild(inp);
-	});
-	var clearBtn = document.createElement('button');
-	clearBtn.appendChild(document.createTextNode('Clear'));
-	clearBtn.title = 'Reset all filters';
-	clearBtn.onclick = function() {
-		for (var k in filterInputs) { filterInputs[k].value = ''; filters[k] = ''; }
+		row.append(inp);
+	}
+	const clearBtn = el('button', { class: 'btn', type: 'button', text: 'Clear', title: 'Reset all filters' });
+	clearBtn.onclick = () => {
+		for (const k in filterInputs) { filterInputs[k].value = ''; filters[k] = ''; }
 		paint();
 	};
-	row.appendChild(clearBtn);
-	box.appendChild(row);
+	row.append(clearBtn);
+	box.append(row);
 
-	var ctlRow = document.createElement('div');
-	ctlRow.className = 'row';
-	ctlRow.style.marginTop = '6px';
-	var qtyInp = document.createElement('input');
-	qtyInp.type = 'text';
-	qtyInp.className = 'num';
-	qtyInp.value = '1';
-	var sendBtn = document.createElement('button');
-	sendBtn.appendChild(document.createTextNode('Send'));
-	sendBtn.onclick = function() { if (selected) send(previewCmd, sendBtn); };
-	var count = document.createElement('span');
-	count.className = 'hint';
-	count.appendChild(document.createTextNode(''));
-	ctlRow.appendChild(count);
-	ctlRow.appendChild(qtyInp);
-	ctlRow.appendChild(sendBtn);
-	box.appendChild(ctlRow);
+	const qtyInp = el('input', { type: 'text', class: 'num', 'aria-label': 'Quantity', value: '1' });
+	const sendBtn = el('button', { class: 'btn', type: 'button', text: 'Send' });
+	sendBtn.onclick = () => { if (selected) send(previewCmd, sendBtn); };
+	const count = el('span', { class: 'dim' });
+	box.append(el('div', { class: 'controls' }, count, qtyInp, sendBtn));
 
-	var preview = document.createElement('div');
-	preview.className = 'preview';
-	preview.appendChild(document.createTextNode('Select a gear set.'));
-	box.appendChild(preview);
+	const preview = el('div', { class: 'preview', text: 'Select a gear set.' });
+	box.append(preview);
+	const names = el('div', { class: 'names' });
+	box.append(names);
 
-	var names = document.createElement('div');
-	names.className = 'names';
-	box.appendChild(names);
+	const list = el('div', { class: 'list' });
+	box.append(list);
 
-	var list = document.createElement('div');
-	list.className = 'list';
-	list.style.marginTop = '6px';
-	box.appendChild(list);
-
-	var selected = null;
-	var previewCmd = null;
+	let selected = null;
+	let previewCmd = null;
 
 	function refreshPreview() {
 		if (!selected) {
-			preview.innerHTML = 'Select a gear set.';
+			preview.textContent = 'Select a gear set.';
 			previewCmd = null;
-			names.innerHTML = '';
+			names.textContent = '';
 			return;
 		}
 		previewCmd = 'makeitems ' + selected.items.join(' ') + ' ' + (qtyInp.value || '1');
-		preview.innerHTML = esc(previewCmd);
+		preview.textContent = previewCmd;
 		showItemNames(selected.items);
 	}
 
 	function showItemNames(ids) {
-		names.innerHTML = 'resolving names...';
-		getJSON('/names?ids=' + ids.join(','), function(map, err) {
-			if (err || !map) { names.innerHTML = ''; return; }
-			var slots = GEARSETS.slotNames || [];
-			var html = [];
-			for (var i = 0; i < ids.length; i++) {
-				var slot = slots[i] ? slots[i] + ': ' : '';
-				html.push(slot + (map[ids[i]] || ids[i]));
-			}
-			names.innerHTML = esc(html.join(' | '));
-		});
+		names.textContent = 'resolving names...';
+		getJSON('/names?ids=' + ids.join(',')).then(map => {
+			const slots = S.gearsets.slotNames || [];
+			const parts = ids.map((id, i) => (slots[i] ? slots[i] + ': ' : '') + (map[id] || id));
+			names.textContent = parts.join(' | ');
+		}).catch(() => { names.textContent = ''; });
 	}
 
 	function paint() {
-		list.innerHTML = '';
-		var matches = (GEARSETS.sets || []).filter(function(s) {
-			for (var k in filters) {
-				var q = filters[k];
-				if (q && String(s[k] || '').toLowerCase().indexOf(q) === -1) return false;
+		list.textContent = '';
+		const sets = S.gearsets.sets || [];
+		const matches = sets.filter(s => {
+			for (const k in filters) {
+				const q = filters[k];
+				if (q && !matchesWords(s[k], q)) return false;
 			}
 			return true;
 		});
-		var total = (GEARSETS.sets || []).length;
-		count.innerHTML = matches.length + (matches.length === total ? ' sets' : ' of ' + total);
+		const total = sets.length;
+		count.textContent = matches.length + (matches.length === total ? ' sets' : ' of ' + total);
 		if (!matches.length) {
-			var e = document.createElement('div');
-			e.className = 'empty';
-			e.appendChild(document.createTextNode((GEARSETS.sets || []).length
-				? 'No gear set matches those filters.'
-				: 'No gear sets in gearsets.json yet.'));
-			list.appendChild(e);
+			list.append(el('div', { class: 'empty', text: total ? 'No gear set matches those filters.' : 'No gear sets in gearsets.json yet.' }));
 			selected = null;
 			refreshPreview();
 			return;
 		}
-		matches.slice(0, 200).forEach(function(s) {
-			var opt = document.createElement('div');
-			opt.className = 'opt';
-			var n = document.createElement('div');
-			n.appendChild(document.createTextNode(s.name));
-			var c = document.createElement('div');
-			c.className = 'id';
-			c.appendChild(document.createTextNode(s.items.length + ' items'));
-			opt.appendChild(n); opt.appendChild(c);
-			opt.onclick = function() {
-				var opts = list.getElementsByClassName('opt');
-				for (var i = 0; i < opts.length; i++) opts[i].className = 'opt';
-				opt.className = 'opt active';
+		for (const s of matches.slice(0, 200)) {
+			const opt = el('button', { class: 'opt', type: 'button' },
+				el('span', { class: 'name', text: s.name }),
+				el('span', { class: 'id', text: s.items.length + ' items' })
+			);
+			opt.onclick = () => {
+				list.querySelectorAll('.opt').forEach(o => o.classList.remove('active'));
+				opt.classList.add('active');
 				selected = s;
 				refreshPreview();
 			};
-			list.appendChild(opt);
-		});
+			list.append(opt);
+		}
 	}
 
 	qtyInp.onchange = refreshPreview;
 	paint();
 }
 
+// ---------- questing: search lines + quests, START / NEXT STEP ----------
+// Quest lines are collapsible headers carrying no buttons; only the quests
+// inside a line get buttons. Everything starts collapsed, so 2700 quests render
+// as 41 headers instead of thousands of DOM nodes.
+const questExpanded = {};
+const SEARCH_CAPS = { perLine: 60, total: 200, loose: 120 };
+
+function renderQuests(box) {
+	const q = el('input', { type: 'text', class: 'grow', 'aria-label': 'Search quest lines and quests', placeholder: 'Search quest lines and quests...' });
+	box.append(el('div', { class: 'controls' }, q));
+
+	const info = el('div', { class: 'dim' });
+	box.append(info);
+
+	const list = el('div', { class: 'list' });
+	box.append(list);
+
+	const hits = (arr, term) => arr.filter(x => x.name.toLowerCase().indexOf(term) !== -1);
+
+	function lineHeader(line, key, open, suffix) {
+		const h = el('button', { class: 'qline' + (open ? ' open' : ''), type: 'button', 'aria-expanded': String(!!open) },
+			el('span', { class: 'chev', text: '▸' }),
+			el('span', { text: line.name }),
+			el('span', { class: 'count', text: line.quests.length + ' quests' + (suffix ? ', ' + suffix : '') })
+		);
+		h.onclick = () => { questExpanded[key] = !questExpanded[key]; paint(); };
+		return h;
+	}
+
+	function questRow(qst) {
+		const bStart = el('button', { class: 'btn', type: 'button', text: 'START' });
+		bStart.onclick = () => send('start_quest ' + qst.id, bStart);
+		const bNext = el('button', { class: 'btn', type: 'button', text: 'NEXT STEP' });
+		bNext.onclick = () => send('next_task ' + qst.id, bNext);
+		return el('div', { class: 'qrow' },
+			el('span', { class: 'qname', text: qst.name }),
+			el('span', { class: 'qid', text: String(qst.id) }),
+			el('span', { class: 'qbtns' }, bStart, bNext)
+		);
+	}
+
+	function paint() {
+		const term = q.value.trim().toLowerCase();
+		list.textContent = '';
+
+		if (!S.quests.counts || !S.quests.counts.quests) {
+			info.textContent = S.questError ? 'Quest data unavailable: ' + S.questError : 'Loading quests...';
+			return;
+		}
+		info.textContent = S.quests.counts.quests + ' quests · ' + S.quests.counts.lines + ' lines';
+
+		let rendered = 0;
+		for (const line of S.quests.lines) {
+			const lineHit = !term || line.name.toLowerCase().indexOf(term) !== -1;
+			const questHits = term ? hits(line.quests, term) : [];
+			if (term && !lineHit && !questHits.length) continue;
+
+			const key = 'L' + line.id;
+			const open = questExpanded[key] || (term && (lineHit || questHits.length));
+			list.append(lineHeader(line, key, open,
+				(term && !lineHit && questHits.length) ? questHits.length + ' matching' : ''));
+
+			if (!open) continue;
+			const show = (term && !lineHit) ? questHits : line.quests;
+			const cap = Math.min(show.length, term ? SEARCH_CAPS.perLine : show.length);
+			for (let k = 0; k < cap && rendered < SEARCH_CAPS.total; k++) {
+				list.append(questRow(show[k]));
+				rendered++;
+			}
+			if (show.length > cap) list.append(el('div', { class: 'qnote', text: '+' + (show.length - cap) + ' more in this line' }));
+		}
+
+		// Quests in no line. Hidden entirely while searching if nothing matches.
+		if (S.quests.loose.length) {
+			const looseHits = term ? hits(S.quests.loose, term) : S.quests.loose;
+			if (!term || looseHits.length) {
+				const key = 'loose';
+				const open = questExpanded[key] || (term && looseHits.length);
+				const lh = el('button', { class: 'qline' + (open ? ' open' : ''), type: 'button', 'aria-expanded': String(!!open) },
+					el('span', { class: 'chev', text: '▸' }),
+					el('span', { text: 'Other quests' }),
+					el('span', { class: 'count', text: S.quests.loose.length + (term ? ' / ' + looseHits.length + ' matching' : '') })
+				);
+				lh.onclick = () => { questExpanded[key] = !questExpanded[key]; paint(); };
+				list.append(lh);
+
+				if (open) {
+					const showLoose = term ? looseHits : S.quests.loose;
+					const lcap = Math.min(showLoose.length, SEARCH_CAPS.loose);
+					for (let m = 0; m < lcap; m++) list.append(questRow(showLoose[m]));
+					if (showLoose.length > lcap)
+						list.append(el('div', { class: 'qnote', text: '+' + (showLoose.length - lcap) + ' more - keep typing to narrow' }));
+				}
+			}
+		}
+
+		if (!list.children.length) {
+			list.append(el('div', { class: 'empty', text: 'No quest or line matches "' + term + '"' }));
+		}
+	}
+
+	q.oninput = paint;
+	paint();
+}
+
+// ---------- item id logger ----------
+// The mod hooks the hover tooltip (C_SHOW_ITEM_TOOLTIP_EX, type 20) and keeps
+// the item ids it saw. This widget shows them and can create the picked one.
+let paintItemLog = null;
+
+function renderItemLog(box, item) {
+	const node = el('div', { class: 'logbox' });
+	const opts = S.itemLog.options || {};
+
+	const chatCb = el('input', { type: 'checkbox', 'aria-label': 'Log to chat' });
+	chatCb.checked = !!opts.chat;
+	const panelCb = el('input', { type: 'checkbox', 'aria-label': 'Log to the panel' });
+	panelCb.checked = opts.panel !== false;
+
+	const setOption = async (key, value) => {
+		try {
+			const r = await getJSON('/items/log/option?key=' + key + '&value=' + (value ? 1 : 0));
+			if (!r.ok) return status('Item logger: ' + (r.error || 'failed'), true);
+			S.itemLog.options = r.options;
+		} catch (e) {
+			status('Item logger: ' + e.message, true);
+		}
+	};
+	chatCb.onchange = () => setOption('chat', chatCb.checked);
+	panelCb.onchange = () => setOption('panel', panelCb.checked);
+
+	node.append(el('div', { class: 'controls' },
+		el('label', { class: 'chain-item' }, chatCb, el('span', { text: 'Log to chat' })),
+		el('label', { class: 'chain-item' }, panelCb, el('span', { text: 'Log to panel' }))
+	));
+
+	const search = el('input', { type: 'text', class: 'grow', 'aria-label': 'Search logged items', placeholder: 'search logged items...' });
+	const list = el('div', { class: 'list' });
+	node.append(el('div', { class: 'controls' }, search), list);
+
+	const qty = el('input', { type: 'text', class: 'num', 'aria-label': 'How many to create', value: '1' });
+	const one = el('button', { class: 'btn', type: 'button', text: 'Create one' });
+	const many = el('button', { class: 'btn', type: 'button', text: 'Create X' });
+	const create = n => {
+		if (!S.itemLog.selected) return status('Pick an item in the list first', true);
+		send('makeitems ' + S.itemLog.selected.id + ' ' + n, null);
+	};
+	one.onclick = () => create(1);
+	many.onclick = () => create(parseInt(qty.value, 10) || 1);
+	node.append(el('div', { class: 'controls' }, one, many, qty));
+
+	const table = el('table', { class: 'picks' });
+	list.append(table);
+
+	const paint = () => {
+		chatCb.checked = !!(S.itemLog.options || {}).chat;
+		panelCb.checked = (S.itemLog.options || {}).panel !== false;
+
+		const q = search.value.trim().toLowerCase();
+		table.textContent = '';
+		let shown = 0;
+		for (const it of S.itemLog.items) {
+			if (q && String(it.name || '').toLowerCase().indexOf(q) === -1 && String(it.id).indexOf(q) === -1) continue;
+			if (++shown > 40) break;
+			const picked = S.itemLog.selected && S.itemLog.selected.id === it.id;
+			const row = el('tr', { class: 'pick' + (picked ? ' active' : '') });
+			row.append(
+				el('td', { class: 'nm' }, el('span', { text: it.name || ('id ' + it.id) })),
+				el('td', { class: 'id', text: String(it.id) })
+			);
+			row.onclick = () => { S.itemLog.selected = it; paint(); };
+			table.append(row);
+		}
+		if (!shown) {
+			table.append(el('tr', {}, el('td', { class: 'nm', colspan: '2' },
+				el('span', { class: 'dim', text: S.itemLog.items.length ? 'No match' : 'Hover an item in the game' }))));
+		}
+	};
+	search.oninput = paint;
+	paintItemLog = paint;
+	paint();
+	if (box) box.append(node);
+	return node;
+}
+
 // ---------- search filter ----------
 function applyFilter() {
-	var q = document.getElementById('search').value.toLowerCase();
-	var items = document.getElementsByClassName('item');
-	for (var i = 0; i < items.length; i++) {
-		var it = items[i];
-		var s = it.getAttribute('data-search') || '';
-		it.style.display = (!q || s.indexOf(q) !== -1) ? '' : 'none';
+	const q = $('#search').value.trim().toLowerCase();
+	const leaves = document.querySelectorAll('.item[data-search]');
+	for (const it of leaves) {
+		it.style.display = (!q || it.dataset.search.indexOf(q) !== -1) ? '' : 'none';
 	}
-	var secs = document.getElementsByClassName('sec');
-	for (var j = 0; j < secs.length; j++) {
-		var any = false;
-		var kids = secs[j].getElementsByClassName('item');
-		for (var k = 0; k < kids.length; k++) if (kids[k].style.display !== 'none') any = true;
-		secs[j].style.display = any ? '' : 'none';
+	// A group is visible when any of its children is.
+	for (const group of document.querySelectorAll('.item.group')) {
+		const any = [...group.querySelectorAll('.item[data-search]')].some(c => c.style.display !== 'none');
+		group.style.display = any ? '' : 'none';
+	}
+	for (const sec of document.querySelectorAll('.sec')) {
+		const any = [...sec.querySelectorAll('.item[data-search]')].some(c => c.style.display !== 'none');
+		sec.style.display = any ? '' : 'none';
 	}
 }
+
+// ---------- reset ----------
+async function resetAll() {
+	// The action clears the auto actions too (auto revive), so the response
+	// carries the new state - no extra round trip.
+	const r = await doAction('reset');
+	if (r && r.ok) syncAuto(r.auto);
+}
+
+// ---------- boot ----------
+// The first visible match, so Enter in the search can jump straight to it.
+function firstVisibleMatch() {
+	return [...document.querySelectorAll('.item[data-search]')].find(it =>
+		it.style.display !== 'none' &&
+		it.closest('.sec') && it.closest('.sec').style.display !== 'none');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+	const search = document.getElementById('search');
+	search.focus();
+
+	// "/" jumps to search from anywhere in the menu (unless already typing).
+	document.addEventListener('keydown', e => {
+		const tag = (e.target && e.target.tagName) || '';
+		if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+			e.preventDefault();
+			search.focus();
+			search.select();
+		}
+	});
+
+	// Enter jumps to the first match, Escape clears the filter.
+	search.addEventListener('keydown', e => {
+		if (e.key === 'Escape') {
+			search.value = '';
+			applyFilter();
+			return;
+		}
+		if (e.key !== 'Enter') return;
+		const first = firstVisibleMatch();
+		if (!first) return;
+		first.scrollIntoView({ block: 'center' });
+		const btn = first.querySelector('button');
+		// Focus on the next tick: moving the focus during the keypress would
+		// hand the Enter key to the new button and press it.
+		if (btn) setTimeout(() => btn.focus(), 0);
+	});
+	search.addEventListener('input', applyFilter);
+
+	document.getElementById('btn-mini').onclick = () => setMini(!S.mini);
+	document.getElementById('btn-close').onclick = () => {
+		const api = tauriApi();
+		if (!api) return status('Close only works in the overlay window', true);
+		api.window.getCurrentWindow().close();
+	};
+
+	// ?mini=1 opens the strip directly - handy in a plain browser.
+	if (new URLSearchParams(location.search).get('mini') === '1') setMini(true);
+
+	loadAll();
+	pollState();
+	pollItemLog();
+	setInterval(pollState, 3000);
+	setInterval(pollItemLog, 2000);
+});
 </script>
 </body>
 </html>

@@ -2,12 +2,100 @@
 
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { spawn } = require('child_process');
 
 const COMMANDS_FILE = path.join(__dirname, 'commands.json');
 const GEARSETS_FILE = path.join(__dirname, 'gearsets.json');
 const DUNGEONS_FILE = path.join(__dirname, 'dungeons.json');
 const QUESTS_FILE = path.join(__dirname, 'quests.json');
+const PANEL_FILE = path.join(__dirname, 'panel.json');
+const LEGACY_PANEL_FILE = path.join(__dirname, 'favourites.json');
+const KEY_FILE = path.join(__dirname, 'key.json');
 const PAGE_FILE = path.join(__dirname, 'ui', 'index.html');
+
+// --- Panel API server ------------------------------------------------------
+// The panel itself is a Tauri overlay (WebView2) that loads this URL, so the
+// page keeps using plain relative fetches. Only the browser changed: the UI
+// module used to serve the same routes and open them in the game's Awesomium
+// browser.
+const API_HOST = '127.0.0.1';
+const API_PORT = parseInt(process.env.QA_TAURI_PORT, 10) || 7331;
+const API_URL = `http://${API_HOST}:${API_PORT}/`;
+
+// Minimal stand-in for the express router the UI module used. Same shape:
+// req.query, res.json(), res.sendFile().
+function createApi() {
+	const routes = [];
+	const server = http.createServer((req, res) => {
+		// The panel is same-origin, but a bundled tauri:// page would need this.
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		const url = new URL(req.url, 'http://' + API_HOST);
+		req.query = {};
+		url.searchParams.forEach((v, k) => { req.query[k] = v; });
+
+		const route = routes.find(r => r.path === url.pathname);
+		if (!route) { res.writeHead(404); return res.end('not found'); }
+
+		res.json = obj => {
+			res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+			res.end(JSON.stringify(obj));
+		};
+		res.sendFile = file => {
+			fs.readFile(file, (err, data) => {
+				if (err) { res.writeHead(500); return res.end(String(err && err.message)); }
+				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+				res.end(data);
+			});
+		};
+
+		try {
+			route.handler(req, res);
+		} catch (e) {
+			res.writeHead(500);
+			res.end(String(e && e.message));
+		}
+	});
+
+	return {
+		get: (p, handler) => routes.push({ path: p, handler }),
+		listen: (port, host, cb) => server.listen(port, host, cb),
+		server
+	};
+}
+
+// --- Tauri overlay ---------------------------------------------------------
+const OVERLAY_EXE = 'qa-tauri.exe';
+
+function findOverlay() {
+	const candidates = [
+		process.env.QA_TAURI_EXE,
+		path.join(__dirname, OVERLAY_EXE),
+		path.join(__dirname, 'tauri', 'src-tauri', 'target', 'release', OVERLAY_EXE),
+		path.join(__dirname, 'tauri', 'src-tauri', 'target', 'debug', OVERLAY_EXE)
+	];
+	for (const c of candidates) {
+		if (c && fs.existsSync(c)) return c;
+	}
+	return null;
+}
+
+// Start (or focus) the Tauri overlay. It is a separate process, so it keeps
+// running while the game keeps the focus.
+function openOverlay(mod) {
+	const exe = findOverlay();
+	if (!exe) {
+		mod.log('qa-qol: overlay not found - put qa-tauri.exe next to index.js or set QA_TAURI_EXE');
+		return;
+	}
+	try {
+		const child = spawn(exe, ['--url', API_URL], { detached: true, stdio: 'ignore' });
+		child.unref();
+		mod.log(`qa-qol: overlay started (${API_URL})`);
+	} catch (e) {
+		mod.log(`qa-qol: cannot start overlay: ${e.message}`);
+	}
+}
 
 function readJson(file, fallback) {
 	try {
@@ -21,6 +109,36 @@ function normalize(cmd) {
 	return String(cmd).trim().replace(/\s+/g, ' ').replace(/^\/@?/, '').trim();
 }
 
+// The panel's saved state: the mini favourites and the item logger options.
+// One file, written by the panel, never published.
+function readPanelState() {
+	const defaults = { favourites: [], itemlog: { chat: false, panel: true } };
+
+	const saved = readJson(PANEL_FILE, null);
+	if (saved) {
+		return {
+			saved: true,
+			favourites: Array.isArray(saved.favourites) ? saved.favourites : [],
+			itemlog: Object.assign({ chat: false, panel: true }, saved.itemlog || {})
+		};
+	}
+	// Older version: the favourites had a file of their own.
+	const legacy = readJson(LEGACY_PANEL_FILE, null);
+	if (legacy) {
+		return {
+			saved: true,
+			favourites: Array.isArray(legacy.favourites) ? legacy.favourites
+				: (Array.isArray(legacy.items) ? legacy.items : []),
+			itemlog: { chat: false, panel: true }
+		};
+	}
+	return Object.assign({ saved: false }, defaults);
+}
+
+function writePanelState(state) {
+	fs.writeFileSync(PANEL_FILE, JSON.stringify(state, null, 2) + '\n');
+}
+
 let lastLoc = null;        // last known player position {x,y,z}
 let zonesCache = null;     // [{ id, channelType, name, huntingZones }]
 let zonesError = null;     // last zone-query failure reason
@@ -32,6 +150,8 @@ let autoTimer = null;      // pending auto-action timer
 let questIndex = null;     // { lines, loose, counts }
 let questError = null;     // why the quest index is unusable (shown in the panel)
 let questTried = 0;        // build attempts, for the log line
+let itemLog = [];          // [{ id, name }] items logged from tooltips, newest first
+let itemLogOpts = { chat: false, panel: true };   // where the logger writes
 
 module.exports = function QaQol(mod) {
 	let gameState = null;
@@ -41,7 +161,23 @@ module.exports = function QaQol(mod) {
 		mod.log(`qa-qol: tera-game-state unavailable: ${e.message}`);
 	}
 
-	const ui = mod.require['UI'];
+	const ui = createApi();
+	ui.open = () => openOverlay(mod);
+	ui.server.on('error', e => mod.log(`qa-qol: panel API error: ${e.message}`));
+
+	// Drop a scheduled auto action (a pending auto revive).
+	const cancelAutoTimer = () => {
+		if (!autoTimer) return;
+		mod.clearTimeout(autoTimer);
+		autoTimer = null;
+	};
+
+	// A reload runs this module again, so the old server has to let go of the
+	// port - otherwise the new instance cannot bind it.
+	this.destructor = () => {
+		if (typeof ui.server.closeAllConnections === 'function') ui.server.closeAllConnections();
+		ui.server.close();
+	};
 
 	const me = () => (gameState && gameState.me) || null;
 	const inGame = () => { const m = me(); return !!(m && m.gameId); };
@@ -227,6 +363,8 @@ module.exports = function QaQol(mod) {
 	// --- Page + data (data files are re-read on every request, so they can be
 	// --- edited while the mod is running; just reopen/reload the menu) --------
 	ui.get('/', (req, res) => { res.sendFile(PAGE_FILE); });
+	// The browser asks for this on its own; answer so it is not a console error.
+	ui.get('/favicon.ico', (req, res) => { res.writeHead(204); res.end(); });
 	ui.get('/commands', (req, res) => { res.json(readJson(COMMANDS_FILE, { sections: [], actions: [] })); });
 	ui.get('/gearsets', (req, res) => { res.json(readJson(GEARSETS_FILE, { filters: [], sets: [] })); });
 	ui.get('/dungeons', (req, res) => { res.json(readJson(DUNGEONS_FILE, { dungeons: [] })); });
@@ -236,6 +374,90 @@ module.exports = function QaQol(mod) {
 			error: questError,
 			loading: !questIndex
 		});
+	});
+
+	// --- Mini mode favourites -----------------------------------------------
+	// The mini strip shows these items. Seeded from the "mini" list in
+	// commands.json, then kept in panel.json so the panel can change it.
+	function readFavourites() {
+		const state = readPanelState();
+		if (state.saved) return state.favourites;
+		return (readJson(COMMANDS_FILE, {}).mini || []).slice();
+	}
+
+	ui.get('/favourites', (req, res) => {
+		res.json({ items: readFavourites() });
+	});
+
+	ui.get('/favourites/toggle', (req, res) => {
+		const label = String(req.query.label || '').trim();
+		if (!label || label.length > 60) return res.json({ ok: false, error: 'Bad label' });
+
+		const items = readFavourites();
+		const at = items.indexOf(label);
+		if (at === -1) items.push(label);
+		else items.splice(at, 1);
+
+		try {
+			writePanelState({ favourites: items, itemlog: itemLogOpts });
+		} catch (e) {
+			return res.json({ ok: false, error: String(e) });
+		}
+		res.json({ ok: true, items });
+	});
+
+	// --- Item id logger ------------------------------------------------------
+	// The client asks the server for the tooltip of the item under the mouse.
+	// Type 20 is that hover request, and the id in it is the item template id.
+	const ITEM_LOG_MAX = 200;
+
+	itemLogOpts = Object.assign({ chat: false, panel: true }, readPanelState().itemlog || {});
+
+	function itemNameOf(id) {
+		const key = readJson(KEY_FILE, {});
+		if (key[id]) return key[id];
+		const items = gameState && gameState.data && gameState.data.items;
+		const item = items && items.get ? items.get(id) : null;
+		return (item && item.name) || null;
+	}
+
+	const logItemTooltip = event => {
+		if (!event || event.type !== 20) return;      // 20 = hover
+		const id = Number(event.id);
+		if (!id || !isFinite(id)) return;
+		if (itemLog.some(e => e.id === id)) return;    // already logged
+		if (!itemLogOpts.panel) return;               // the panel is not a target
+
+		const name = itemNameOf(id);
+		itemLog.unshift({ id: id, name: name });
+		if (itemLog.length > ITEM_LOG_MAX) itemLog.pop();
+
+		if (itemLogOpts.chat) {
+			try { mod.command.message('qa', `item ${id}${name ? ' ' + name : ''}`); }
+			catch (e) { mod.log(`qa-qol: cannot log to chat: ${e.message}`); }
+		}
+	};
+
+	// Literal versions, so the manifest generator picks the defs up.
+	try { mod.hook('C_SHOW_ITEM_TOOLTIP_EX', 2, logItemTooltip); }
+	catch (e) { mod.log(`qa-qol: cannot hook C_SHOW_ITEM_TOOLTIP_EX v2: ${e.message}`); }
+	try { mod.hook('C_SHOW_ITEM_TOOLTIP_EX', 3, logItemTooltip); }
+	catch (e) { mod.log(`qa-qol: cannot hook C_SHOW_ITEM_TOOLTIP_EX v3: ${e.message}`); }
+
+	ui.get('/items/log', (req, res) => {
+		res.json({ items: itemLog, options: itemLogOpts });
+	});
+
+	ui.get('/items/log/option', (req, res) => {
+		const key = String(req.query.key || '');
+		if (key !== 'chat' && key !== 'panel') return res.json({ ok: false, error: 'Bad option' });
+		itemLogOpts[key] = (req.query.value === '1' || req.query.value === 'true');
+		try {
+			writePanelState({ favourites: readFavourites(), itemlog: itemLogOpts });
+		} catch (e) {
+			return res.json({ ok: false, error: String(e) });
+		}
+		res.json({ ok: true, options: itemLogOpts });
 	});
 
 	// --- Live game state (no QA command needed) ------------------------------
@@ -269,6 +491,9 @@ module.exports = function QaQol(mod) {
 			const n = parseInt(req.query.seconds, 10);
 			if (!isNaN(n) && n >= 0 && n <= 600) a.seconds = n;
 		}
+		// Switching an auto action off must also drop a revive that is already
+		// scheduled, otherwise it fires anyway.
+		if (!a.enabled) cancelAutoTimer();
 
 		res.json({ ok: true, action: { command: cmd, enabled: a.enabled, seconds: a.seconds } });
 	});
@@ -372,8 +597,20 @@ module.exports = function QaQol(mod) {
 				sent.push(command);
 			}
 		});
+
+		// The auto actions (auto revive) are mod state, not server commands, so
+		// an action has to switch them off itself.
+		if (act.clearAuto) {
+			Object.keys(autoActions).forEach(cmd => {
+				if (!autoActions[cmd].enabled) return;
+				autoActions[cmd].enabled = false;
+				sent.push('auto ' + cmd + ' off');
+			});
+			cancelAutoTimer();
+		}
+
 		mod.log(`Action "${act.id}": ${sent.join('; ')}`);
-		res.json({ ok: true, sent: sent });
+		res.json({ ok: true, sent: sent, auto: autoActions });
 	});
 
 	// --- Name the current zone so it shows up in the dungeon list ------------
@@ -426,6 +663,11 @@ module.exports = function QaQol(mod) {
 		}
 	});
 
+	// --- Panel API ----------------------------------------------------------
+	// The Tauri overlay loads this URL. One port for the whole session; a
+	// second game client on the same machine will fail to bind (logged).
+	ui.listen(API_PORT, API_HOST, () => mod.log(`qa-qol: panel API on ${API_URL}`));
+
 };
 
 module.exports.saveState = () => ({
@@ -435,7 +677,9 @@ module.exports.saveState = () => ({
 	debug: debug,
 	logging: logging,
 	autoActions: autoActions,
-	questIndex: questIndex
+	questIndex: questIndex,
+	itemLog: itemLog,
+	itemLogOpts: itemLogOpts
 });
 
 module.exports.loadState = state => {
@@ -445,6 +689,8 @@ module.exports.loadState = state => {
 	if (state.lastLoc) lastLoc = state.lastLoc;
 	if (state.autoActions) autoActions = state.autoActions;
 	if (state.questIndex) { questIndex = state.questIndex; questError = null; }
+	if (state.itemLog) itemLog = state.itemLog;
+	if (state.itemLogOpts) itemLogOpts = state.itemLogOpts;
 	debug = !!state.debug;
 	logging = !!state.logging;
 };

@@ -1,0 +1,5 @@
+tauri/src-tauri/target/
+tauri/src-tauri/gen/
+panel.json
+favourites.json
+itemlog.json

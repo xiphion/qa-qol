@@ -53,48 +53,65 @@
 			"title": "NICHE",
 			"items": [
 				{
-					"type": "options",
-					"label": "Perfect level",
-					"cmd": "/@perfect_level",
-					"hint": "level + skills",
-					"allowCustom": true,
-					"options": [
-						{ "label": "60", "args": "60" },
-						{ "label": "62", "args": "62" },
-						{ "label": "65", "args": "65" }
-					]
-				},
-				{
-					"type": "options",
-					"label": "Level",
-					"cmd": "/@level",
-					"hint": "level only",
-					"allowCustom": true,
-					"options": [
-						{ "label": "60", "args": "60" },
-						{ "label": "62", "args": "62" },
-						{ "label": "65", "args": "65" }
-					]
-				},
-				{ "type": "cmd", "label": "Clear all skills", "cmd": "/@clear_all_skill", "chain": [
-					{ "label": "Give thread passive item", "cmd": "/@insert_item 283999 1", "defaultOn": true }
-				] },
-				{ "type": "cmd", "label": "Clear all achievements", "cmd": "/@clear_all_achievement" },
-				{
-					"type": "options",
-					"label": "Clear all crests",
-					"cmd": "/@clear_all_crest",
-					"hint": "no arg only disables",
-					"options": [
-						{ "label": "Disable only", "args": "" },
-						{ "label": "Reset to 0", "args": "0" }
+					"type": "group",
+					"items": [
+						{
+							"type": "options",
+							"label": "Perfect level",
+							"cmd": "/@perfect_level",
+							"hint": "level + skills",
+							"allowCustom": true,
+							"options": [
+								{ "label": "60", "args": "60" },
+								{ "label": "62", "args": "62" },
+								{ "label": "65", "args": "65" }
+							]
+						},
+						{
+							"type": "options",
+							"label": "Level",
+							"cmd": "/@level",
+							"hint": "level only",
+							"allowCustom": true,
+							"options": [
+								{ "label": "60", "args": "60" },
+								{ "label": "62", "args": "62" },
+								{ "label": "65", "args": "65" }
+							]
+						}
 					]
 				},
 				{
 					"type": "group",
 					"items": [
+						{ "type": "cmd", "label": "Clear all skills", "cmd": "/@clear_all_skill", "chain": [
+							{ "label": "Give thread passive item", "cmd": "/@insert_item 283999 1", "defaultOn": true }
+						] },
+						{
+							"type": "options",
+							"label": "Clear all crests",
+							"cmd": "/@clear_all_crest",
+							"hint": "no arg only disables",
+							"options": [
+								{ "label": "Disable only", "args": "" },
+								{ "label": "Reset to 0", "args": "0" }
+							]
+						}
+					]
+				},
+				{ "type": "cmd", "label": "Clear all achievements", "cmd": "/@clear_all_achievement" },
+				{
+					"type": "group",
+					"items": [
 						{ "type": "teleport", "label": "Teleport", "cmd": "/@teleport", "hint": "zone + coordinates" },
-						{ "type": "input", "label": "Goto player", "cmd": "/@goto", "placeholder": "character name" }
+						{
+							"type": "group",
+							"layout": "column",
+							"items": [
+								{ "type": "input", "label": "Goto player", "cmd": "/@goto", "placeholder": "character name" },
+								{ "type": "itemlog", "label": "Item id logger", "hint": "hover an item in the game" }
+							]
+						}
 					]
 				},
 				{ "type": "quests", "label": "Questing", "hint": "search quest lines and quests" },
@@ -113,11 +130,13 @@
 			]
 		}
 	],
+	"mini": ["No die", "No cooldown", "MP full", "Speed", "Kill range"],
 	"actions": [
 		{
 			"id": "reset",
 			"label": "Reset all cheats",
-			"cmds": ["speed 1", "nodie off", "nocool off", "mpfull off"]
+			"cmds": ["speed 1", "nodie off", "nocool off", "mpfull off"],
+			"clearAuto": true
 		}
 	]
 }

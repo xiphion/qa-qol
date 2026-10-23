@@ -1,14 +1,16 @@
 {
 	"files": {
 		"ArbiterServer_QA_p31.txt": "badb8d087ee43117631f4db562b284ebc003bc7d6ef6f9cbd1f4acf2c5fe2081",
-		"README.md": "f9d7f565ee202e8d018adc71ad5349aa09b57c62b0b8838cc7e21189fc4e0b00",
+		"README.md": "cd6590967c607d52b182d566cc3735dcb4571fd3f4b29aa87992522d24ccf06a",
 		"WorldServer_QA_p31.txt": "3b9f1baf67c8951adda2022b45ee2671f986c1c7d6635dc605ed57b3eecc5bc5",
-		"commands.json": "7faf16c47776bb4464d2168ef576821b093e9b6a5ff3dbcd05cb0ae1b321a369",
+		"commands.json": "4cdf9208e438c3ed04e0bc648f5fe44b94d41d444e382a77e1e47aef6319d9ed",
 		"dungeons.json": "d5a69330229c1d64aa9540b28d805335f43a368231e82a1b33ea1520f41f5983",
 		"gearsets.json": "be6b00cf10a0bba5c734480d5c169a8873c1da4eef8e140e76c2982f8f8412bf",
-		"index.js": "fa58097a4afa7e858f37199b8c7a7b6e688ef96c37a10368ef5870420fb31c08",
+		"index.js": "2014aa13280766c0296f5f630e8d6ab8d3fdc2420f0a6e9ad462b1105d89b55d",
 		"key.json": "cc49d46474d11369c3769ec86bb0f73cbef121604875187cd59c7f378a9abcaf",
-		"module.json": "59bfd3df3d07682e37ae3eb69c1c6efdab3a3a0f5860fbd261ebbeefa48e2f2b",
+		"module.config.json": "ffd5d7bb9f6dca2a3bb7846596055c761f0f041868e065f6211e272724e5b38d",
+		"module.json": "c79bcca985a85b9567f3c94646b1a51b466df1a488a4b2172b83b43050f723bd",
+		"qa-tauri.exe": "44d8561f8f6f2217dac6993066d261d36cb429a668edfa800a96115c5c2aaf36",
 		"quests.json": "5d0d7c3981ea0d8009b71ce93edabce5792b1ae9afc025d00b0886032c8413f9",
 		"tester-gear/ToT testing dungeons.html": "0015bb2b875ff72b2e141eba781368eec1bbc8ca49913ff8e6435eea01fd930f",
 		"tester-gear/data.html": "0f7e2f2e52450e01e9f131cbe5c39d9c30346983d1099ad43bf338036e410371",
@@ -18,11 +20,15 @@
 		"tester-gear/resources/sheet.css": "f7dec13927f664407ca58ec978fb049423eae7d5b5ce973f6c77fbfceb6c40c9",
 		"tools/build-data.js": "98cf7c54f9bf8cf2d4db3b2d2c3d104b251873ba2735b6b8c6f981787104b317",
 		"tools/build-quests.js": "5562a1dde5499f23cde4f50232c6f99d74731888fccc2995f19bcebe0e4cd3a0",
-		"ui/index.html": "70f85a645d892f46faebd3dce4f1f84655b572639214de2cee6d0e2e8f3ef13d"
+		"tools/check-api.js": "0dd97928fedf6be6bb3f5cab665f1b49da4b5c1e2dc4cc712e671b694d651fd1",
+		"tools/check-ui.js": "5bb3f78b44cb6512cd9a1b6d75d599247a9d72c93bf678cbec2bd0477f6ac7c8",
+		"tools/serve.js": "441cb386720207f712691cc874bf82a4a7175500f1daca405843e30174568235",
+		"ui/index.html": "692dfaa2805d444a0965b6d35f5c7aab68726844edb909b723c1d3814bc73870"
 	},
 	"defs": {
 		"C_ADMIN": 1,
 		"C_PLAYER_LOCATION": 5,
+		"C_SHOW_ITEM_TOOLTIP_EX": [2,3],
 		"S_SHOW_DEAD_UI": 1,
 		"S_SYSTEM_MESSAGE": 1
 	}
